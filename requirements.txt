@@ -1,3 +1,4 @@
 chalice
 flake8
 pytest
+requests
