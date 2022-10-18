@@ -3,6 +3,7 @@ import requests
 
 app = Chalice(app_name='products-api')
 
+
 @app.route('/')
 def index():
     return {'hello': 'world'}
@@ -21,12 +22,11 @@ def get_post():
 def create_book():
     book_as_json = app.current_request.json_body
     try:
-        Item = {
-            'id': book_as_json['id'],
-            "title": book_as_json['title'],
+        item = {
+            "id": id,
             "author": book_as_json['author']
         }
-        return {"id": book_as_json['id'], "title": book_as_json['title'], "author": book_as_json['author']}
+        return {'message': item, 'status': 201}
     except Exception as e:
         return {'message': str(e)}
 
@@ -37,11 +37,11 @@ def create_book():
 def update_book(id):
     book_as_json = app.current_request.json_body
     try:
-        Item = {
-            "id": book_as_json['id'],
-            "title": book_as_json['title'],
+        item = {
+            "id": id,
+            "author": book_as_json['author']
         }
-        return {'message': 'ok - UPDATED', 'status': 201}
+        return {'message': item, 'status': 201}
     except Exception as e:
         return {'message': str(e)}
 
@@ -52,10 +52,10 @@ def update_book(id):
 def delete_book(id):
     book_as_json = app.current_request.json_body
     try:
-        Item = {
-            "id": book_as_json['id'],
+        item = {
+            "id": id,
             "author": book_as_json['author']
         }
-        return {'message': 'ok - DELETED', 'status': 201}
+        return {'message': item, 'status': 201}
     except Exception as e:
         return {'message': str(e)}

@@ -23,4 +23,4 @@ def test_no_get_post(mock_get):
     """Mock testing to check when no post is returned"""
     mock_get.return_value.ok = False
     response = app.get_post()
-    assert response == None
+    assert response is None
