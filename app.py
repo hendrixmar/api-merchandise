@@ -19,7 +19,10 @@ print(config)
 app = Chalice(app_name='products-api')
 DATABASE_URL = f"postgresql+psycopg2://{config.get('DB_USER')}:{config.get('DB_PASS')}@{config.get('DB_HOST')}/{config.get('DB_NAME')}"
 engine = create_engine(DATABASE_URL)
+
 Session = sessionmaker(bind=engine)
+DeclarativeBase = declarative_base()
+DeclarativeBase.metadata.create_all(engine)
 # create a Session
 app.register_blueprint(extra_routes)
 
