@@ -6,3 +6,4 @@ sqlalchemy
 psycopg2-binary
 aws_lambda_powertools
 python-dotenv
+marshmallow

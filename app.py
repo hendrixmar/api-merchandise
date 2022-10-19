@@ -2,29 +2,15 @@ from chalice import Chalice
 import os
 from datetime import date
 import requests
-from chalicelib.products.routes import extra_routes
-from sqlalchemy import create_engine
+from chalicelib.products.routes import product_routes
+from chalicelib.db import Session, Base, engine
 from chalicelib.db import Movie
-from sqlalchemy.orm import sessionmaker, declarative_base
+from aws_lambda_powertools import Logger
+from aws_lambda_powertools import Tracer
 
-
-if os.getenv("GITHUB_ACTION"):
-    config = {key: os.getenv(key) for key in ['DB_USER','DB_PASS', 'DB_HOST', 'DB_NAME']}
-else:
-    from dotenv import load_dotenv, dotenv_values
-    load_dotenv()  # take environment variables from .env.
-    config = dict(dotenv_values(".env"))
-
-print(config)
 app = Chalice(app_name='products-api')
-DATABASE_URL = f"postgresql+psycopg2://{config.get('DB_USER')}:{config.get('DB_PASS')}@{config.get('DB_HOST')}/{config.get('DB_NAME')}"
-engine = create_engine(DATABASE_URL)
-
-Session = sessionmaker(bind=engine)
-DeclarativeBase = declarative_base()
-DeclarativeBase.metadata.create_all(engine)
-# create a Session
-app.register_blueprint(extra_routes)
+app.register_blueprint(product_routes)
+Base.metadata.create_all(engine)
 
 
 @app.route('/')
