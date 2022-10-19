@@ -17,6 +17,9 @@ jobs:
         # Provide the password for postgres
         env:
           POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: devuser
+          POSTGRES_DB: devdb
+
         # Set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready
@@ -45,3 +48,8 @@ jobs:
       - name: Test with pytest
         run: |
           pytest
+        env:
+          DB_HOST: "localhost:5432"
+          DB_NAME: devdb
+          DB_USER: devuser
+          DB_PASS: postgres
