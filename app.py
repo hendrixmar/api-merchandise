@@ -10,7 +10,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 app = Chalice(app_name='products-api')
 
 
-DATABASE_URL = f"postgresql+psycopg2://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASS')}@{os.environ.get('DB_HOST')}/{os.environ.get('DB_NAME')}"
+DATABASE_URL = f"postgresql+psycopg2://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASS')}@{os.environ.get('DB_HOST')}/{os.environ.get('DB_NAME')} "
 engine = create_engine(DATABASE_URL)
 Session = sessionmaker(bind=engine)
 # create a Session

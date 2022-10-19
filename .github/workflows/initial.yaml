@@ -17,8 +17,8 @@ jobs:
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
-          docker-compose run --rm app sh -c "flake8"
+          docker-compose run --rm app sh -c "ls"
 
       - name: Test with pytest
         run: |
-          docker-compose run --rm app sh -c "pytes"
+          docker-compose run --rm app sh -c "pytest"
