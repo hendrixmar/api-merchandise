@@ -6,16 +6,17 @@ from chalicelib.products.routes import extra_routes
 from sqlalchemy import create_engine
 from chalicelib.db import Movie
 from sqlalchemy.orm import sessionmaker, declarative_base
+from dotenv import load_dotenv, dotenv_values
 
+load_dotenv()  # take environment variables from .env.
+config = dict(dotenv_values(".env"))
+print(config)
 app = Chalice(app_name='products-api')
-
-
-DATABASE_URL = f"postgresql+psycopg2://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASS')}@{os.environ.get('DB_HOST')}/{os.environ.get('DB_NAME')} "
+DATABASE_URL = f"postgresql+psycopg2://{config.get('DB_USER')}:{config.get('DB_PASS')}@{config.get('DB_HOST')}/{config.get('DB_NAME')}"
 engine = create_engine(DATABASE_URL)
 Session = sessionmaker(bind=engine)
 # create a Session
 app.register_blueprint(extra_routes)
-
 
 @app.route('/')
 def index():
@@ -84,5 +85,6 @@ def delete_book(id):
         return {'message': str(e)}
 
 
-if __name__ == "__main__":
-    app.run()
+
+
+
