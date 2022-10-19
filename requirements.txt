@@ -2,3 +2,6 @@ chalice
 flake8
 pytest
 requests
+sqlalchemy
+psycopg2-binary
+aws_lambda_powertools

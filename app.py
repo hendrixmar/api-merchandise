@@ -1,12 +1,35 @@
 from chalice import Chalice
+import os
+from datetime import date
 import requests
+from chalicelib.products.routes import extra_routes
+from sqlalchemy import create_engine
+from chalicelib.db import Movie
+from sqlalchemy.orm import sessionmaker, declarative_base
 
 app = Chalice(app_name='products-api')
 
 
+DATABASE_URL = f"postgresql+psycopg2://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASS')}@{os.environ.get('DB_HOST')}/{os.environ.get('DB_NAME')}"
+engine = create_engine(DATABASE_URL)
+Session = sessionmaker(bind=engine)
+# create a Session
+app.register_blueprint(extra_routes)
+
+
 @app.route('/')
 def index():
-    return {'hello': 'world'}
+    with Session() as session:
+        bourne_identity = Movie("The Bourne Identity", date(2002, 10, 11))
+        furious_7 = Movie("Furious 7", date(2015, 4, 2))
+        pain_and_gain = Movie("Pain & Gain", date(2013, 8, 23))
+
+        session.add(bourne_identity)
+        session.add(furious_7)
+        session.add(pain_and_gain)
+        session.commit()
+    # 3 - create a new session
+    return {"madres": "Cabeshon"}
 
 
 @app.route('/post')
@@ -59,3 +82,7 @@ def delete_book(id):
         return {'message': item, 'status': 201}
     except Exception as e:
         return {'message': str(e)}
+
+
+if __name__ == "__main__":
+    app.run()
