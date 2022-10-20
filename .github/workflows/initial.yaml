@@ -58,11 +58,16 @@ jobs:
       - name: chalice deploy
         uses: jayef0/chalice-extended-action@release-v0.2.1
         env:
-          WORKING_DIRECTORY: backend/chalice
+          WORKING_DIRECTORY: .
           REQUIREMENTS_FILE: requirements.txt
           OPERATION: deploy
           STAGE: prod
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: us-east-1
-          CHALICE_STAGE: production
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: devdb
+          DB_USER: devuser
+          DB_PASS: postgres
+
