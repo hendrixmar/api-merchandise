@@ -26,7 +26,7 @@ def index():
         session.commit()
         temp = (dict(row) for row in session.query(Movie).all())
     # 3 - create a new session
-    return [os.getenv("WE"), len(temp)]
+    return [os.getenv("WE"), len(list(temp))]
 
 
 @app.route('/post')
