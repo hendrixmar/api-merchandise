@@ -5,10 +5,11 @@ import json
 
 class Settings:
 
-    if os.environ.get("CHALICE_STAGE") == "production":
+    if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
         client = boto3.client("secretsmanager")
         response = client.get_secret_value(SecretId=os.environ.get("SECRET_NAME"))
         config = json.loads(response["SecretString"])
+
     else:
         from dotenv import load_dotenv, find_dotenv
         load_dotenv(find_dotenv())
@@ -20,3 +21,6 @@ class Settings:
     DB_PORT = config.get('DB_PORT')
     DB_NAME = config.get('DB_NAME')
     DATABASE_URL = f"postgresql+psycopg2://{config.get('DB_USER')}:{config.get('DB_PASS')}@{config.get('DB_HOST')}:{config.get('DB_PORT')}/{config.get('DB_NAME')}"
+
+
+print(Settings.DATABASE_URL)
