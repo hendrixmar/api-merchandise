@@ -4,7 +4,9 @@
   "xray": true,
   "stages": {
     "dev": {
-      "api_gateway_stage": "api"
+      "api_gateway_stage": "api",
+      "subnet_ids": ["subnet-0e6e5c718dfc12bb8", "subnet-012400d7a29373aac"],
+      "security_group_ids": ["sg-042c229cca816196f"]
     }
   }
 }
