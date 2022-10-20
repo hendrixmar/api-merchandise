@@ -5,8 +5,17 @@
   "stages": {
     "dev": {
       "api_gateway_stage": "api",
-      "subnet_ids": ["subnet-0e6e5c718dfc12bb8", "subnet-012400d7a29373aac"],
-      "security_group_ids": ["sg-042c229cca816196f"]
+      "subnet_ids": ["subnet-0608d38cc139c31c7", "subnet-055a5877c88873a32"],
+      "security_group_ids": ["sg-0f940dd8de923c5ec"]
+    },
+    "prod": {
+      "api_gateway_stage": "api",
+      "subnet_ids": ["subnet-0608d38cc139c31c7", "subnet-055a5877c88873a32"],
+      "security_group_ids": ["sg-0f940dd8de923c5ec"],
+      "environment_variables": {
+        "CHALICE_STAGE": "development",
+        "SECRET_NAME": "sampleapp-credentials"
+      }
     }
   }
 }
