@@ -10,7 +10,7 @@ from aws_lambda_powertools import Tracer
 
 app = Chalice(app_name='products-api')
 app.register_blueprint(product_routes)
-Base.metadata.create_all(engine)
+
 
 
 @app.route('/')
