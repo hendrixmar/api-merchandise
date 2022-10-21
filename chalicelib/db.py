@@ -19,6 +19,7 @@ except ValueError:
     print("Db connection available")
     Session = object
     Base = declarative_base()
+    engine = object
 
 
 
