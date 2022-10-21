@@ -61,7 +61,7 @@ jobs:
           DB_NAME: devdb
           DB_USER: devuser
           DB_PASS: postgres
-      - deploy chalice
+      - name: deploy chalice
         run: |
           chalice deploy
         env:
