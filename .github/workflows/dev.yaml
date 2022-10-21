@@ -66,5 +66,13 @@ jobs:
       - name: deploy chalice
         run: |
           chalice deploy --stage dev
-        
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: devdb
+          DB_USER: devuser
+          DB_PASS: postgres
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
           
