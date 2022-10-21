@@ -1,7 +1,8 @@
 from marshmallow import Schema, fields
 
 
-class UserSchema(Schema):
-    name = fields.Str()
-    email = fields.Email()
-    created_at = fields.DateTime()
+class ProductsSchema(Schema):
+    name = fields.String()
+    price = fields.Decimal()
+    unit_measure = fields.Integer()
+
