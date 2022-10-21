@@ -10,6 +10,7 @@ if not os.getenv("GITHUB_ACTION"):
 
     load_dotenv(find_dotenv())
 
+
 try:
     engine = create_engine(Settings.DATABASE_URL)
     Base = declarative_base()

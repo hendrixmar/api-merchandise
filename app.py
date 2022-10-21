@@ -12,7 +12,6 @@ app = Chalice(app_name='products-api')
 app.register_blueprint(product_routes)
 
 
-
 @app.route('/')
 def index():
     with Session() as session:
@@ -68,12 +67,12 @@ def update_book(id):
 
 # DELETE endpoint to delete a particular book based on the given ID
 
-@app.route('/book/{id}', methods=['DELETE'])
-def delete_book(id):
+@app.route('/book/{idx}', methods=['DELETE'])
+def delete_book(idx):
     book_as_json = app.current_request.json_body
     try:
         item = {
-            "id": id,
+            "id": idx,
             "author": book_as_json['author']
         }
         return {'message': item, 'status': 201}

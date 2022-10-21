@@ -61,19 +61,15 @@ jobs:
           DB_NAME: devdb
           DB_USER: devuser
           DB_PASS: postgres
-          GITHUB_ACTION: true
-      - name: chalice deploy
-        uses: jayef0/chalice-extended-action@release-v0.2.1
+      - deploy chalice
+        run: |
+          chalice deploy
         env:
-          PROJECT_DIR: .
-          REQUIREMENTS_FILE: requirements.txt
-          OPERATION: deploy
-          STAGE: dev
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: us-east-1
           DB_HOST: localhost
           DB_PORT: 5432
           DB_NAME: devdb
           DB_USER: devuser
           DB_PASS: postgres
+          GITHUB_ACTION: true
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
