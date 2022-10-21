@@ -34,8 +34,8 @@ jobs:
         with:
           python-version: '3.9'
           cache: 'pip' # caching pip dependencies
-      - name: Cache pip install
       - uses: actions/cache@v2
+      - name: Cache pip install
         id: cache
         with:
           path: ~/.cache/pip
@@ -71,3 +71,8 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: us-east-1
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: devdb
+          DB_USER: devuser
+          DB_PASS: postgres
