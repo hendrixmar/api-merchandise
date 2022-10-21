@@ -3,13 +3,15 @@ from chalice.test import Client
 from unittest.mock import patch
 
 
-def test_index():
-    with Client(app.app) as client:
-        response = client.http.get('/')
-        assert response.status_code == 200
+
 
 
 """
+def test_index():
+    with Client(app.app) as client:
+        response = client.http.get('/product/15')
+        assert response.status_code == 200
+        
 @patch('app.requests.get')
 def test_get_post(mock_get):
   

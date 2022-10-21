@@ -22,5 +22,3 @@ class Settings:
     DB_NAME = config.get('DB_NAME')
     DATABASE_URL = f"postgresql+psycopg2://{config.get('DB_USER')}:{config.get('DB_PASS')}@{config.get('DB_HOST')}:{config.get('DB_PORT')}/{config.get('DB_NAME')}"
 
-
-print(Settings.DATABASE_URL)
