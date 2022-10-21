@@ -49,6 +49,3 @@ def create_book():
     except Exception as e:
         return {'message': str(e)}
 
-
-# PUT endpoint to update a book item based on the given ID
-
