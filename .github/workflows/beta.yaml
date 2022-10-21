@@ -1,4 +1,4 @@
-name: Python package
+name: beta workflow deployment
 on:
   push:
     branches:

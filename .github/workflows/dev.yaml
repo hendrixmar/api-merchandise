@@ -1,4 +1,4 @@
-name: Python package
+name: dev workflow deployment
 on:
   push:
     branches:
