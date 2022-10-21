@@ -17,6 +17,7 @@ try:
     Session = sessionmaker(bind=engine)
 except ValueError:
     print("Db connection available")
+    Session = object
 
 
 
