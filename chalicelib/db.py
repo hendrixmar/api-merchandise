@@ -10,10 +10,14 @@ if not os.getenv("GITHUB_ACTION"):
 
     load_dotenv(find_dotenv())
 
-engine = create_engine(Settings.DATABASE_URL)
-Base = declarative_base()
-Base.metadata.create_all(engine)
-Session = sessionmaker(bind=engine)
+try:
+    engine = create_engine(Settings.DATABASE_URL)
+    Base = declarative_base()
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+except ValueError:
+    print("Db connection available")
+
 
 
 
