@@ -17,12 +17,11 @@ def serializer(scheme: Schema):
     def decorator(function):
         def wrapper(*args, **kwargs):
             print("----serializeer----")
-            print(scheme)
-            print(kwargs)
+
             scheme().load(kwargs)
-            print(function)
+
             result = function(*args, **kwargs)
-            print(result)
+
             print("---------------------")
             return result
 
@@ -37,7 +36,7 @@ def marschal_with(scheme: Schema):
 
     def decorator(function):
         def wrapper(*args, **kwargs):
-
+            print("----marschal----")
             result = function(*args, **kwargs)
             return [dict(e) for e in result]
 
