@@ -52,29 +52,3 @@ def create_book():
 
 # PUT endpoint to update a book item based on the given ID
 
-@app.route('/book/{id}', methods=['PUT'])
-def update_book(id):
-    book_as_json = app.current_request.json_body
-    try:
-        item = {
-            "id": id,
-            "author": book_as_json['author']
-        }
-        return {'message': item, 'status': 201}
-    except Exception as e:
-        return {'message': str(e)}
-
-
-# DELETE endpoint to delete a particular book based on the given ID
-
-@app.route('/book/{idx}', methods=['DELETE'])
-def delete_book(idx):
-    book_as_json = app.current_request.json_body
-    try:
-        item = {
-            "id": idx,
-            "author": book_as_json['author']
-        }
-        return {'message': item, 'status': 201}
-    except Exception as e:
-        return {'message': str(e)}
