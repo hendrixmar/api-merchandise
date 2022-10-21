@@ -15,6 +15,7 @@ try:
     Base = declarative_base()
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
+    print("YEAH")
 except ValueError:
     print("Db connection available")
     Session = object
