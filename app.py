@@ -3,13 +3,15 @@ import os
 from datetime import date
 import requests
 from chalicelib.products.routes import product_routes
-from chalicelib.db import Session, Base, engine
-from chalicelib.models import Movie
+from chalicelib.db import engine, create_all_models
+
 from aws_lambda_powertools import Logger
 from aws_lambda_powertools import Tracer
 
 app = Chalice(app_name='products-api')
 app.register_blueprint(product_routes)
-Base.metadata.create_all(engine)
+
+print("Aqui")
+create_all_models()
 
 

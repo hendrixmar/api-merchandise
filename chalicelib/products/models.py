@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Date, DECIMAL
-from chalicelib.db import Base
+from sqlalchemy import Column, Integer, String, DECIMAL
+from sqlalchemy.orm import declarative_base
 
+Base = declarative_base()
 
 class Products(Base):
     __tablename__ = 'tblProducts'
@@ -17,3 +18,5 @@ class Products(Base):
 
     def __iter__(self):
         return ((column, str(getattr(self, column))) for column in self.__table__.c.keys())
+
+print("AQUI-products")
