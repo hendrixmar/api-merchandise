@@ -1,15 +1,11 @@
 from marshmallow_sqlalchemy import SQLAlchemySchema, auto_field
-from .models import Products
+from .models import UnitMeasure
+from marshmallow import Schema, fields
 
-
-class ProductsSchema(SQLAlchemySchema):
+class UnitMeasureSchema(SQLAlchemySchema):
     class Meta:
-        model = Products
+        model = UnitMeasure
         load_instance = True  # Optional: deserialize to model instances
 
-    id = auto_field()
     name = auto_field()
-    price = auto_field()
-    unit_measure = auto_field()
-
-
+    id = auto_field()

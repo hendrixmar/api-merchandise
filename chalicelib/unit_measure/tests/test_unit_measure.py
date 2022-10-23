@@ -4,6 +4,8 @@ import app
 from chalice.test import Client
 from http import HTTPStatus as status
 from unittest.mock import patch
+
+from chalicelib.unit_measure.args import UnitMeasureSchema
 from chalicelib.unit_measure.models import UnitMeasure
 from chalicelib.products.models import Products
 from chalicelib.unit_measure.tests.config_test import gateway_factory
@@ -16,6 +18,9 @@ mylogger = logging.getLogger(__name__)
 
 
 def teardown_class():
+    with Session() as session:
+        session.query(UnitMeasure).delete()
+        session.commit()
     mylogger.info("teardown_class_unit_measure")
 
 
@@ -23,9 +28,7 @@ def setup_class():
     with Session() as session:
         session.query(UnitMeasure).delete()
         session.commit()
-
-
-
+    print("DELETED")
 
 
 class TestChalice(object):
@@ -41,57 +44,45 @@ class TestChalice(object):
 
     def test_retrieve_unit_measures(self, gateway_factory):
         with Session() as session:
-            temp = UnitMeasure(name="kg")
-            session.add(temp)
-            session.commit()
 
+            session.add_all([UnitMeasure(name="liters"),
+                             UnitMeasure(name="kg"),
+                             UnitMeasure(name="lb")])
+
+            session.commit()
 
         gateway = gateway_factory()
         response = gateway.handle_request(method='GET',
-                                          path='/products',
+                                          path='/unit-measure',
                                           headers={'Content-Type': 'application/json'},
                                           body=json.dumps({'name': 'kg'}))
 
         with Session() as session:
             stmt = select(UnitMeasure)
-            unit_measure = session.execute(stmt).fetchall()
+            result = session.execute(stmt)
+            unit_measure = UnitMeasureSchema().dump([i[0] for i in result], many=True)
 
-
-        print(unit_measure)
         body = json.loads(response.get('body'))
+        assert body == unit_measure
 
-        assert True #body == dict(unit_measure)
 
     def test_create_unit_measure(self, gateway_factory):
+
+        gateway = gateway_factory()
+        response = gateway.handle_request(method='POST',
+                                          path='/unit-measure',
+                                          headers={'Content-Type': 'application/json'},
+                                          body=json.dumps({'name': 'pounds'}))
+
+        body = json.loads(response.get('body'))
+        print(response)
         with Session() as session:
             temp = UnitMeasure(name="liters")
             session.add(temp)
             session.commit()
 
-        gateway = gateway_factory()
-        response = gateway.handle_request(method='POST',
-                                          path='/products',
-                                          headers={'Content-Type': 'application/json'},
-                                          body=json.dumps({'name': 'kg'}))
 
-        body = json.loads(response.get('body'))
-        print(body)
+
+
         assert True
 
-
-"""
-@patch('app.requests.get')
-def test_get_post(mock_get):
-  
-    mock_get.return_value.ok = True
-    response = app.get_post()
-    assert response.ok
-
-
-@patch('app.requests.get')
-def test_no_get_post(mock_get):
-  
-    mock_get.return_value.ok = False
-    response = app.get_post()
-    assert response is None
-"""

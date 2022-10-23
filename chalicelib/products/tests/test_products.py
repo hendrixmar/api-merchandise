@@ -38,7 +38,7 @@ class TestChalice(object):
                                           headers={},
                                           body='')
 
-        print(response)
+
         assert response['statusCode'] == 200
 
     def test_create_products(self, gateway_factory):

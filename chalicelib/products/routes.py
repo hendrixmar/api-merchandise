@@ -17,42 +17,27 @@ product_routes = Blueprint(__name__)
 
 
 @product_routes.route('/products/{key}', methods=['GET'])
-@serializer(ValidateId(), Products)
-@marschal_with(ProductsSchema)
+@serializer(scheme=ValidateId(), model=Products)
+@marschal_with(scheme=ProductsSchema())
 def retrieves_product(key: int):
-    if key == 2:
-        with Session() as session:
-            bourne_identity = Products("The Bourne Identity")
-            session.add(bourne_identity)
-            session.commit()
-        with Session() as session:
-            temp = session.query(Products).all()
-
-        return temp
-
     return [{'id': '1', 'name': 'The Bourne Identity', 'price': '420.13', 'unit_measure': '420'}]
 
 
 @product_routes.route('/products', methods=['GET'])
+@serializer(ValidateId(), Products)
 def add_product():
     json_input = product_routes.current_request.json_body
-
-
-
-
-
     with Session() as session:
-        """
-        stmt = delete(UnitMeasure).all()
-        temp = session.execute(stmt)
-        """
-        session.query(UnitMeasure).delete(synchronize_session=False)
-        session.commit()
+        stmt = select(UnitMeasure)
+        unit_measure = session.execute(stmt)
+        result = [dict(i[0]) for i in unit_measure]
 
-    return Response(body=json.dumps(json_input),
+    return \
+        """
+        Response(body=json.dumps(result),
                     headers={'Content-Type': 'application/json'},
                     status_code=200)
-
+    """
 
 @product_routes.route('/product/{key}', methods=['PATCH'])
 def overwrite_product(key: int):

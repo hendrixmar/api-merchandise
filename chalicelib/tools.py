@@ -1,6 +1,7 @@
 from marshmallow import Schema, fields
 from marshmallow.exceptions import ValidationError
 from chalice import BadRequestError
+from marshmallow_sqlalchemy import SQLAlchemySchema
 from sqlalchemy.orm import DeclarativeMeta
 
 
@@ -18,19 +19,20 @@ class ValidateId(Schema):
     key = fields.Integer(validate=validate_quantity)
 
 
-def serializer(scheme: Schema, model: DeclarativeMeta):
+def serializer(model: DeclarativeMeta, scheme: Schema = None):
     def decorator(endpoint_function):
         def wrapper(*args, **kwargs):
-            try:
-                print(scheme)
-                scheme.load(data=kwargs)
+            if scheme:
+                try:
+                    print(scheme)
+                    scheme.load(data=kwargs)
 
-            except ValidationError as err:
-                raise BadRequestError(f"Invalid get parameter {err.messages}")
+                except ValidationError as err:
+                    raise BadRequestError(f"Invalid get parameter {err.messages}")
 
             if model:
                 pass
-
+            print(endpoint_function)
             result = endpoint_function(*args, **kwargs)
             return result
 
@@ -39,11 +41,12 @@ def serializer(scheme: Schema, model: DeclarativeMeta):
     return decorator
 
 
-def marschal_with(scheme: Schema):
+def marschal_with(scheme: SQLAlchemySchema):
     def decorator(function):
         def wrapper(*args, **kwargs):
             result = function(*args, **kwargs)
-            return [dict(e) for e in result]
+            print(function)
+            return scheme.dump(result, many=True)
 
         return wrapper
 
