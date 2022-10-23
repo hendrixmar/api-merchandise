@@ -2,6 +2,7 @@ from marshmallow_sqlalchemy import SQLAlchemySchema, auto_field
 from .models import UnitMeasure
 from marshmallow import Schema, fields
 
+
 class UnitMeasureSchema(SQLAlchemySchema):
     class Meta:
         model = UnitMeasure

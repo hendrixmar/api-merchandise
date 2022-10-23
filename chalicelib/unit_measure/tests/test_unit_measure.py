@@ -1,10 +1,12 @@
 import json
 
+import pytest
+
 import app
 from chalice.test import Client
 from http import HTTPStatus as status
 from unittest.mock import patch
-
+from decimal import Decimal
 from chalicelib.unit_measure.args import UnitMeasureSchema
 from chalicelib.unit_measure.models import UnitMeasure
 from chalicelib.products.models import Products
@@ -30,21 +32,22 @@ def setup_class():
         session.commit()
     print("DELETED")
 
+@pytest.fixture(autouse=True)
+def run_before_and_after_tests(tmpdir):
+    with Session() as session:
+        session.query(UnitMeasure).delete()
+        session.commit()
+
+    yield
+
+    with Session() as session:
+        session.query(UnitMeasure).delete()
+        session.commit()
 
 class TestChalice(object):
 
-    def test_index(self, gateway_factory):
-        gateway = gateway_factory()
-        response = gateway.handle_request(method='GET',
-                                          path='/products/',
-                                          headers={},
-                                          body='')
-
-        assert True
-
     def test_retrieve_unit_measures(self, gateway_factory):
         with Session() as session:
-
             session.add_all([UnitMeasure(name="liters"),
                              UnitMeasure(name="kg"),
                              UnitMeasure(name="lb")])
@@ -62,27 +65,37 @@ class TestChalice(object):
             result = session.execute(stmt)
             unit_measure = UnitMeasureSchema().dump([i[0] for i in result], many=True)
 
-        body = json.loads(response.get('body'))
+        body, status_code = json.loads(response.get('body')), response.get("statusCode")
+        print(response)
+        assert status_code == status.OK
         assert body == unit_measure
 
-
     def test_create_unit_measure(self, gateway_factory):
-
         gateway = gateway_factory()
         response = gateway.handle_request(method='POST',
                                           path='/unit-measure',
                                           headers={'Content-Type': 'application/json'},
-                                          body=json.dumps({'name': 'pounds'}))
+                                          body='')
 
         body = json.loads(response.get('body'))
         print(response)
         with Session() as session:
-            temp = UnitMeasure(name="liters")
-            session.add(temp)
-            session.commit()
+            stmt = select(UnitMeasure).where(UnitMeasure.id == body.get('id'))
+            temp, = session.execute(stmt).fetchone()
+            result = UnitMeasureSchema().dump(temp)
 
 
+        assert response.get("statusCode") == status.CREATED
+        assert body == dict(result)
 
+    def test_partial_update(self, gateway_factory):
+        pass
 
-        assert True
+    def test_full_update(self, gateway_factory):
+        pass
 
+    def test_duplicate_unit_measure(self, gateway_factory):
+        pass
+
+    def test_delete_unit_measure(self, gateway_factory):
+        pass

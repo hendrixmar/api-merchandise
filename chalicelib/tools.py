@@ -1,6 +1,6 @@
 from marshmallow import Schema, fields
 from marshmallow.exceptions import ValidationError
-from chalice import BadRequestError
+from chalice import BadRequestError, Response
 from marshmallow_sqlalchemy import SQLAlchemySchema
 from sqlalchemy.orm import DeclarativeMeta
 
@@ -41,13 +41,17 @@ def serializer(model: DeclarativeMeta, scheme: Schema = None):
     return decorator
 
 
-def marschal_with(scheme: SQLAlchemySchema):
+def marschal_with(scheme: SQLAlchemySchema, status_code: int = 200, content_type: str = 'application/json'):
     def decorator(function):
         def wrapper(*args, **kwargs):
             result = function(*args, **kwargs)
             print(function)
-            return scheme.dump(result, many=True)
+            return Response(body=scheme.dump(result),
+                            status_code=status_code,
+                            headers={'Content-Type': content_type})
 
         return wrapper
 
     return decorator
+
+

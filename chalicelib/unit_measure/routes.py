@@ -1,5 +1,4 @@
 
-
 """
 IMport examples
 
@@ -13,7 +12,7 @@ def delete_book(id):
 
 from chalice import Blueprint, Response
 from sqlalchemy import delete, select
-
+from http import HTTPStatus as status
 from chalicelib.db import Session
 from .args import UnitMeasureSchema
 from .models import UnitMeasure
@@ -26,7 +25,7 @@ unit_measure_routes = Blueprint(__name__)
 
 @unit_measure_routes.route('/unit-measure', methods=['GET'])
 @serializer(model=UnitMeasure)
-@marschal_with(scheme=UnitMeasureSchema())
+@marschal_with(scheme=UnitMeasureSchema(), status_code=status.OK, content_type='application/json')
 def add_unit_measure():
 
     with Session() as session:
@@ -38,14 +37,17 @@ def add_unit_measure():
 
 @unit_measure_routes.route('/unit-measure', methods=['POST'])
 @serializer(model=UnitMeasure)
-@marschal_with(scheme=UnitMeasureSchema())
+@marschal_with(scheme=UnitMeasureSchema(), status_code=status.CREATED, content_type='application/json')
 def add_unit_measure():
     json_input = unit_measure_routes.current_request.json_body
-    print(json_input)
+
     with Session() as session:
-        session.add(UnitMeasure(**json_input))
+        new_unit_measure = UnitMeasure(**json_input)
+        session.add(new_unit_measure)
         session.commit()
 
+        print(dict(new_unit_measure))
 
 
-    return {}
+    print(new_unit_measure.name)
+    return new_unit_measure

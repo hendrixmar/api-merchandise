@@ -6,9 +6,6 @@ from sqlalchemy import delete, select
 from chalicelib.db import Session
 from .models import Products
 from .args import ProductsSchema
-from marshmallow import Schema
-from marshmallow.exceptions import ValidationError
-from marshmallow import fields
 from chalicelib.tools import ValidateId
 from chalicelib.tools import serializer, marschal_with
 from ..unit_measure.models import UnitMeasure
@@ -18,7 +15,7 @@ product_routes = Blueprint(__name__)
 
 @product_routes.route('/products/{key}', methods=['GET'])
 @serializer(scheme=ValidateId(), model=Products)
-@marschal_with(scheme=ProductsSchema())
+@marschal_with(scheme=ProductsSchema(many=True))
 def retrieves_product(key: int):
     return [{'id': '1', 'name': 'The Bourne Identity', 'price': '420.13', 'unit_measure': '420'}]
 
