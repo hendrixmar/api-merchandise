@@ -29,7 +29,7 @@ def setup_class():
         session.commit()
 
 
-class TestChalice(object):
+class TestUnitMeasursse(object):
 
     def test_index_3(self, gateway_factory):
         gateway = gateway_factory()
