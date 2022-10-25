@@ -8,8 +8,7 @@ from http import HTTPStatus as status
 from unittest.mock import patch
 from decimal import Decimal
 from chalicelib.unit_measure.args import UnitMeasureSchema
-from chalicelib.unit_measure.models import UnitMeasure
-from chalicelib.products.models import Products
+from chalicelib.models import UnitMeasure
 from chalicelib.unit_measure.tests.config_test import gateway_factory
 from sqlalchemy import delete, select, insert
 import logging
@@ -19,26 +18,8 @@ logging.basicConfig(level=logging.DEBUG)
 mylogger = logging.getLogger(__name__)
 
 
-def teardown_class():
-    with Session() as session:
-        session.query(UnitMeasure).delete()
-        session.commit()
-    mylogger.info("teardown_class_unit_measure")
-
-
-def setup_class():
-    with Session() as session:
-        session.query(UnitMeasure).delete()
-        session.commit()
-    print("DELETED")
-
-
 @pytest.fixture(autouse=True)
 def run_before_and_after_tests(tmpdir):
-    with Session() as session:
-        session.query(UnitMeasure).delete()
-        session.commit()
-
     yield
 
     with Session() as session:
@@ -47,27 +28,32 @@ def run_before_and_after_tests(tmpdir):
 
 
 class TestUnitMeasure(object):
-
     def test_retrieve_unit_measures(self, gateway_factory):
         with Session() as session:
-            session.add_all([UnitMeasure(name="liters"),
-                             UnitMeasure(name="kg"),
-                             UnitMeasure(name="lb")])
+            session.add_all(
+                [
+                    UnitMeasure(name="liters"),
+                    UnitMeasure(name="kg"),
+                    UnitMeasure(name="lb"),
+                ]
+            )
 
             session.commit()
 
         gateway = gateway_factory()
-        response = gateway.handle_request(method='GET',
-                                          path='/unit-measure',
-                                          headers={'Content-Type': 'application/json'},
-                                          body='')
+        response = gateway.handle_request(
+            method="GET",
+            path="/unit-measure",
+            headers={"Content-Type": "application/json"},
+            body="",
+        )
 
         with Session() as session:
             stmt = select(UnitMeasure)
             result = session.execute(stmt).scalars().all()
             unit_measure = UnitMeasureSchema().dump(result, many=True)
 
-        body, status_code = json.loads(response.get('body')), response.get("statusCode")
+        body, status_code = json.loads(response.get("body")), response.get("statusCode")
 
         assert status_code == status.OK
         assert body == unit_measure
@@ -80,12 +66,14 @@ class TestUnitMeasure(object):
             id_new_unit_measure, = session.execute(stmt).inserted_primary_key
             session.commit()
         """
-        response = gateway.handle_request(method='POST',
-                                          path='/unit-measure',
-                                          headers={'Content-Type': 'application/json'},
-                                          body=json.dumps({"name": "kilos"}))
+        response = gateway.handle_request(
+            method="POST",
+            path="/unit-measure",
+            headers={"Content-Type": "application/json"},
+            body=json.dumps({"name": "kilos"}),
+        )
 
-        body = json.loads(response.get('body'))
+        body = json.loads(response.get("body"))
 
         with Session() as session:
             temp = session.get(UnitMeasure, body.get("id"))
@@ -97,16 +85,19 @@ class TestUnitMeasure(object):
     def test_partial_update(self, gateway_factory):
         with Session() as session:
             stmt = insert(UnitMeasure).values(name="liters")
-            id_new_unit_measure, = session.execute(stmt).inserted_primary_key
+            (id_new_unit_measure,) = session.execute(stmt).inserted_primary_key
             session.commit()
-
+        print()
         gateway = gateway_factory()
-        response = gateway.handle_request(method='PATCH',
-                                          path=f'/unit-measure/{id_new_unit_measure}',
-                                          headers={'Content-Type': 'application/json'},
-                                          body=json.dumps({"name": "kilos"}))
+        response = gateway.handle_request(
+            method="PATCH",
+            path=f"/unit-measure/{id_new_unit_measure}",
+            headers={"Content-Type": "application/json"},
+            body=json.dumps({"name": "kilos"}),
+        )
 
-        body = json.loads(response.get('body'))
+        body = json.loads(response.get("body"))
+        print(body)
         with Session() as session:
             result: UnitMeasure = session.get(UnitMeasure, id_new_unit_measure)
 
@@ -122,12 +113,14 @@ class TestUnitMeasure(object):
             session.commit()
 
         gateway = gateway_factory()
-        response = gateway.handle_request(method='POST',
-                                          path=f'/unit-measure',
-                                          headers={'Content-Type': 'application/json'},
-                                          body=json.dumps({"name": "liters"}))
+        response = gateway.handle_request(
+            method="POST",
+            path=f"/unit-measure",
+            headers={"Content-Type": "application/json"},
+            body=json.dumps({"name": "liters"}),
+        )
 
-        body = json.loads(response.get('body'))
+        body = json.loads(response.get("body"))
 
         assert response.get("statusCode") == status.FORBIDDEN
         assert body.get("Code") == "ForbiddenError"
@@ -136,16 +129,17 @@ class TestUnitMeasure(object):
     def test_delete_unit_measure(self, gateway_factory):
         with Session() as session:
             stmt = insert(UnitMeasure).values(name="liters")
-            id_new_unit_measure, = session.execute(stmt).inserted_primary_key
+            (id_new_unit_measure,) = session.execute(stmt).inserted_primary_key
             session.commit()
-
+        print(f"/unit-measure/{id_new_unit_measure}")
         gateway = gateway_factory()
-        response = gateway.handle_request(method='DELETE',
-                                          path=f'/unit-measure/{id_new_unit_measure}',
-                                          headers={'Content-Type': 'application/json'},
-                                          body='')
+        response = gateway.handle_request(
+            method="DELETE",
+            path=f"/unit-measure/{id_new_unit_measure}",
+            headers={"Content-Type": "application/json"},
+            body=json.dumps({}),
+        )
 
-        body = json.loads(response.get('body'))
+        body = json.loads(response.get("body"))
         assert response.get("statusCode") == status.NO_CONTENT
         assert body is None
-

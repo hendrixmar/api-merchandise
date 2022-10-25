@@ -1,5 +1,5 @@
 from marshmallow_sqlalchemy import SQLAlchemySchema, auto_field
-from .models import UnitMeasure
+from chalicelib.models import UnitMeasure
 from marshmallow import Schema, fields
 
 

@@ -13,4 +13,5 @@ def gateway_factory():
         if config is None:
             config = Config()
         return LocalGateway(app, config)
+
     return create_gateway

@@ -1,5 +1,5 @@
 from marshmallow_sqlalchemy import SQLAlchemySchema, auto_field
-from .models import Products
+from chalicelib.models import Products
 
 
 class ProductsSchema(SQLAlchemySchema):
@@ -10,6 +10,4 @@ class ProductsSchema(SQLAlchemySchema):
     id = auto_field()
     name = auto_field()
     price = auto_field()
-    unit_measure = auto_field()
-
-
+    unit_measure_id = auto_field()

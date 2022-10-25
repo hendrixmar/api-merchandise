@@ -5,4 +5,6 @@ psycopg2-binary
 aws_lambda_powertools
 marshmallow
 python-dotenv
-
+flake8
+pytest
+black

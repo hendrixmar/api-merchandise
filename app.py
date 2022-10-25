@@ -10,10 +10,8 @@ from aws_lambda_powertools import Tracer
 
 from chalicelib.unit_measure.routes import unit_measure_routes
 
-app = Chalice(app_name='products-api')
+app = Chalice(app_name="products-api")
 app.register_blueprint(product_routes)
 app.register_blueprint(unit_measure_routes)
 print("Aqui")
 create_all_models()
-
-
