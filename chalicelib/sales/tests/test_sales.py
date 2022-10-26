@@ -35,8 +35,8 @@ def run_before_and_after_tests(tmpdir):
         session.commit()
 
 
-class TestUnitMeasure(object):
-    def test_retrieve_products(self, gateway_factory):
+class TestSales(object):
+    def test_retrieve_sales(self, gateway_factory):
         with Session() as session:
             stmt = insert(UnitMeasure).values(name="liters")
             (id_new_unit_measure,) = session.execute(stmt).inserted_primary_key
@@ -47,19 +47,19 @@ class TestUnitMeasure(object):
                         name="Coca Cola",
                         price=239,
                         unit_measure_id=id_new_unit_measure,
-                        stock=1,
+                        stock=20,
                     ),
                     Products(
                         name="Pepsi",
                         price=239,
                         unit_measure_id=id_new_unit_measure,
-                        stock=1,
+                        stock=10,
                     ),
                     Products(
                         name="Fanta",
                         price=239,
                         unit_measure_id=id_new_unit_measure,
-                        stock=1,
+                        stock=20,
                     ),
                 ]
             )

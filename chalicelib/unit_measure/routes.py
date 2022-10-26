@@ -1,13 +1,3 @@
-"""
-IMport examples
-
-@app.route('/book/{id}', methods=['DELETE'])
-def delete_book(id):
-    book_as_json = app.current_request.json_body
-
-
-
-"""
 import sqlalchemy
 from chalice import Blueprint, Response
 from sqlalchemy import delete, select, update, insert, exists
@@ -28,7 +18,7 @@ unit_measure_routes = Blueprint(__name__)
     status_code=Status.OK,
     content_type="application/json",
 )
-def add_unit_measure():
+def add_unit_measure(json_body: dict = {}):
     with Session() as session:
         stmt = select(UnitMeasure)
         unit_measures = session.execute(stmt).scalars().all()
@@ -37,11 +27,11 @@ def add_unit_measure():
 
 
 @unit_measure_routes.route("/unit-measure/{key}", methods=["GET"])
-@serializer(scheme=ValidateId())
+@serializer(query_string_scheme=ValidateId())
 @marschal_with(
     scheme=UnitMeasureSchema(), status_code=Status.OK, content_type="application/json"
 )
-def add_unit_measure(key: int):
+def add_unit_measure(key: int, json_body: dict = {}):
     with Session() as session:
         result: UnitMeasure = session.get(UnitMeasure, key)
 
@@ -49,67 +39,54 @@ def add_unit_measure(key: int):
 
 
 @unit_measure_routes.route("/unit-measure", methods=["POST"])
+@serializer()
 @marschal_with(
     scheme=UnitMeasureSchema(),
     status_code=Status.CREATED,
     content_type="application/json",
 )
-def add_unit_measure():
-    json_input = unit_measure_routes.current_request.json_body
+def add_unit_measure(json_body: dict = {}):
 
     with Session() as session:
-        stmt = insert(UnitMeasure).values(**json_input)
+        stmt = insert(UnitMeasure).values(**json_body)
         try:
             (id_new_unit_measure,) = session.execute(stmt).inserted_primary_key
             session.commit()
         except IntegrityError:
             raise ForbiddenError(
-                f"The unit-measure ({json_input.get('name')}) already exist"
+                f"The unit-measure ({json_body.get('name')}) already exist"
             )
 
-    return {**json_input, **{"id": id_new_unit_measure}}
+    return {**json_body, **{"id": id_new_unit_measure}}
 
 
 @unit_measure_routes.route("/unit-measure/{key}", methods=["PATCH", "PUT"])
-@serializer(scheme=ValidateId())
+@serializer(query_string_scheme=ValidateId())
 @marschal_with(status_code=Status.NO_CONTENT, content_type="application/json")
-def add_unit_measure(key: int):
-    json_input = unit_measure_routes.current_request.json_body
-
+def add_unit_measure(key: int, json_body: dict = {}):
     with Session() as session:
-        stmt = update(UnitMeasure).where(UnitMeasure.id == key).values(**json_input)
+        stmt = update(UnitMeasure).where(UnitMeasure.id == key).values(**json_body)
         try:
             session.execute(stmt)
             session.commit()
         except IntegrityError:
             raise ForbiddenError(
-                f"The unit-measure ({json_input.get('name')}) already exist"
+                f"The unit-measure ({json_body.get('name')}) already exist"
             )
 
 
-    """
-    with Session() as session:
-        stmt = select(UnitMeasure).where(UnitMeasure.id == key)
-        stmt = exists(stmt).select()
-        result = session.execute(stmt).scalar()
-
-    if not result:
-        raise ForbiddenError(f"The unit-measure doesnt exist")
-
-    with Session() as session:
-        stmt = update(UnitMeasure).where(UnitMeasure.id == key).values(**json_input)
-        session.execute(stmt)
-        session.commit()
-    """
-
-
 @unit_measure_routes.route("/unit-measure/{key}", methods=["DELETE"])
-@serializer()
+@serializer(query_string_scheme=ValidateId())
 @marschal_with(status_code=Status.NO_CONTENT, content_type="application/json")
-def add_unit_measure(key: int):
+def add_unit_measure(key: int, json_body: dict = {}):
     with Session() as session:
         stmt = delete(UnitMeasure).where(UnitMeasure.id == key)
-        session.execute(stmt)
-        session.commit()
+        try:
+            session.execute(stmt)
+            session.commit()
+        except IntegrityError:
+            raise ForbiddenError(
+                f"The unit measure with the id {key} is related with one more products"
+            )
 
     return None

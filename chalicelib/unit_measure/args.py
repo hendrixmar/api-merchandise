@@ -10,3 +10,7 @@ class UnitMeasureSchema(SQLAlchemySchema):
 
     name = auto_field()
     id = auto_field()
+
+
+class ValidateJsonSorting(Schema):
+    name = fields.Boolean()

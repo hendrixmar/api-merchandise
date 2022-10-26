@@ -3,11 +3,13 @@ from chalice import Blueprint, Response
 from sqlalchemy import delete, select, update, insert, exists
 from http import HTTPStatus as status
 from chalicelib.db import Session
-from .args import ProductsSchema
+from .args import ProductsSchema, ValidateJsonBodyProduct
 from chalicelib.models import Products
 from chalicelib.tools import ValidateId, serializer, marschal_with
 from chalice import BadRequestError, ForbiddenError
 from sqlalchemy.exc import IntegrityError
+
+from ..unit_measure.args import ValidateJsonSorting
 
 product_routes = Blueprint(__name__)
 
@@ -26,12 +28,11 @@ def retrieve_products():
 
 
 @product_routes.route("/products/{key}", methods=["GET"])
-@serializer(scheme=ValidateId())
+@serializer(query_string_scheme=ValidateId())
 @marschal_with(
     scheme=ProductsSchema(), status_code=status.OK, content_type="application/json"
 )
 def add_product(key: int):
-
     with Session() as session:
         result: Products = session.get(Products, key)
 
@@ -39,29 +40,27 @@ def add_product(key: int):
 
 
 @product_routes.route("/products", methods=["POST"])
+@serializer(json_scheme=ValidateJsonBodyProduct())
 @marschal_with(
     scheme=ProductsSchema(), status_code=status.CREATED, content_type="application/json"
 )
-def add_unit_measure():
-    json_input = product_routes.current_request.json_body
+def add_unit_measure(json_body: dict = {}):
 
     with Session() as session:
-        stmt = insert(Products).values(**json_input)
+        stmt = insert(Products).values(**json_body)
         try:
             (id_new_unit_measure,) = session.execute(stmt).inserted_primary_key
             session.commit()
         except IntegrityError:
-            raise ForbiddenError(
-                f"The product ({json_input.get('name')}) already exist"
-            )
+            raise ForbiddenError(f"The product ({json_body.get('name')}) already exist")
 
-    return {**json_input, **{"id": id_new_unit_measure}}
+    return {**json_body, **{"id": id_new_unit_measure}}
 
 
 @product_routes.route("/products/{key}", methods=["PATCH", "PUT"])
-@serializer(scheme=ValidateId())
+@serializer(query_string_scheme=ValidateId())
 @marschal_with(status_code=status.NO_CONTENT, content_type="application/json")
-def add_product(key: int):
+def add_product(key: int, body: dict = {}):
     json_input = product_routes.current_request.json_body
 
     with Session() as session:
@@ -81,12 +80,16 @@ def add_product(key: int):
 
 
 @product_routes.route("/products/{key}", methods=["DELETE"])
-@serializer(scheme=ValidateId())
+@serializer(query_string_scheme=ValidateId())
 @marschal_with(status_code=status.NO_CONTENT, content_type="application/json")
-def add_unit_measure(key: int):
+def add_unit_measure(key: int, json: dict = {}):
     with Session() as session:
         stmt = delete(Products).where(Products.id == key)
-        session.execute(stmt)
-        session.commit()
+        try:
+
+            session.execute(stmt)
+            session.commit()
+        except IntegrityError:
+            raise ForbiddenError(f"The product ({key}) already exist")
 
     return None

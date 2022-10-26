@@ -131,7 +131,7 @@ class TestUnitMeasure(object):
             stmt = insert(UnitMeasure).values(name="liters")
             (id_new_unit_measure,) = session.execute(stmt).inserted_primary_key
             session.commit()
-        print(f"/unit-measure/{id_new_unit_measure}")
+
         gateway = gateway_factory()
         response = gateway.handle_request(
             method="DELETE",

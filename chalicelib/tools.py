@@ -17,17 +17,27 @@ class ValidateId(Schema):
     key = fields.Integer()
 
 
-def serializer(scheme: Schema = None):
+def serializer(query_string_scheme: Schema = None, json_scheme: Schema = None):
     def decorator(endpoint_function):
         def wrapper(*args, **kwargs):
             from app import app
+
             # TODO serializer the json body
-            print(app.current_request.json_body, "si se pudo", kwargs)
+            json_body = app.current_request.json_body
             try:
-                if scheme:
-                    scheme.load(data=kwargs)
+                # Validate the query string parameters
+                if query_string_scheme:
+                    query_string_scheme.load(data=kwargs)
+
+                # Validate the json body of the request
+                if json_scheme:
+                    json_scheme.load(data=json_body)
+
             except ValidationError as err:
                 raise BadRequestError(f"Invalid get parameter {err.messages}")
+
+            if app.current_request.json_body:
+                kwargs.update({"json_body": app.current_request.json_body})
 
             return endpoint_function(*args, **kwargs)
 
