@@ -1,59 +1,3 @@
-import os
-from chalicelib.settings import Settings
-from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy import create_engine, text
-
-if not os.getenv("GITHUB_ACTION"):
-    from dotenv import load_dotenv, find_dotenv
-
-    load_dotenv(find_dotenv())
-
-engine = create_engine(Settings.DATABASE_URL)
-
-Base = declarative_base()
-
-
-def create_all_models():
-    Base.metadata.create_all(engine)
-
-
-def create_triggers():
-
-    with open("./chalicelib/triggers.sql") as file:
-        stmt_triggers = text(file.read())
-
-    with Session() as session:
-        stmt = """SELECT  event_object_table AS table_name, trigger_name
-                        FROM information_schema.triggers"""
-
-        exist = session.execute(stmt).scalar()
-        if not exist:
-            print("here")
-            session.execute(stmt_triggers)
-            session.commit()
-
-
-Session = sessionmaker(bind=engine)
-
-TRIGGERS_DEFINITIONS = """
-    CREATE TRIGGER create_new_sale
-      BEFORE INSERT
-      ON "tblSalesItem"
-      FOR EACH ROW
-      EXECUTE PROCEDURE stock_availability();
-    
-    
-    CREATE TRIGGER update_sales_amount
-      before UPDATE
-      ON "tblSalesItem"
-      FOR EACH ROW
-      EXECUTE PROCEDURE update_sales_items();
-
-"""
-
-
-ROUTINES_DEFINITIONS = """
-    
 CREATE OR REPLACE FUNCTION stock_availability()
   RETURNS TRIGGER
   LANGUAGE PLPGSQL
@@ -122,6 +66,19 @@ BEGIN
 	RETURN NEW;
 END;
 $$;
-"""
 
-create_all_models()
+
+
+CREATE TRIGGER create_new_sale
+  BEFORE INSERT
+  ON "tblSalesItem"
+  FOR EACH ROW
+  EXECUTE PROCEDURE stock_availability();
+
+
+CREATE TRIGGER update_sales_amount
+  before UPDATE
+  ON "tblSalesItem"
+  FOR EACH ROW
+  EXECUTE PROCEDURE update_sales_items();
+
