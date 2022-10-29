@@ -8,7 +8,6 @@ from chalicelib.db import Session
 
 
 def validate_quantity(n):
-
     if n == 20:
         raise ValidationError("Quantity must not be greater than 30.")
 
@@ -36,8 +35,7 @@ def serializer(query_string_scheme: Schema = None, json_scheme: Schema = None):
             except ValidationError as err:
                 raise BadRequestError(f"Invalid get parameter {err.messages}")
 
-            if app.current_request.json_body:
-                kwargs.update({"json_body": app.current_request.json_body})
+            kwargs.update({"json_body": json_body})
 
             return endpoint_function(*args, **kwargs)
 
@@ -47,9 +45,9 @@ def serializer(query_string_scheme: Schema = None, json_scheme: Schema = None):
 
 
 def marschal_with(
-    scheme: SQLAlchemySchema = None,
-    status_code: int = 200,
-    content_type: str = "application/json",
+        scheme: SQLAlchemySchema = None,
+        status_code: int = 200,
+        content_type: str = "application/json",
 ):
     def decorator(function):
         def wrapper(*args, **kwargs):

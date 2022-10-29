@@ -1,8 +1,9 @@
 chalice
 requests
 sqlalchemy
-psycopg2-binary
-aws_lambda_powertools
+psycopg2-binary==2.9.5
+aws_lambda_powertools==2.0.0
 marshmallow
 python-dotenv
+pytz
 

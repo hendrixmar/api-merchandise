@@ -28,7 +28,6 @@ def create_triggers():
 
         exist = session.execute(stmt).scalar()
         if not exist:
-            print("here")
             session.execute(stmt_triggers)
             session.commit()
 
