@@ -8,7 +8,7 @@
       "subnet_ids": ["subnet-0608d38cc139c31c7", "subnet-055a5877c88873a32"],
       "security_group_ids": ["sg-0f940dd8de923c5ec"],
       "environment_variables": {
-        "CHALICE_STAGE": "development",
+        "CHALICE_STAGE": "production",
         "SECRET_NAME": "sampleapp-credentials"
       }
     },

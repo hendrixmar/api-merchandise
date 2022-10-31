@@ -3,7 +3,7 @@ from chalice import Blueprint, Response
 from sqlalchemy import delete, select, update, insert, exists
 from http import HTTPStatus as status
 from chalicelib.db import Session
-from .args import ProductsSchema, ValidateJsonBodyProduct
+from .args import ProductsSchema, ValidateJsonBodyProduct, ValidateJsonBodyProductPatch
 from chalicelib.models import Products
 from chalicelib.tools import ValidateId, serializer, marschal_with
 from chalice import BadRequestError, ForbiddenError
@@ -23,7 +23,7 @@ product_routes = Blueprint(__name__)
 def retrieve_products():
     with Session() as session:
         stmt = select(Products)
-        products = session.execute(stmt).scalars().all()
+        products = session.execute(stmt).scalars().unique().all()
     return products
 
 
@@ -32,7 +32,7 @@ def retrieve_products():
 @marschal_with(
     scheme=ProductsSchema(), status_code=status.OK, content_type="application/json"
 )
-def retrieve_product(key: int):
+def retrieve_product(key: int, json_body: dict = {}):
     with Session() as session:
         result: Products = session.get(Products, key)
 
@@ -53,28 +53,31 @@ def add_product(json_body: dict = {}):
             session.commit()
         except IntegrityError:
             raise ForbiddenError(f"The product ({json_body.get('name')}) already exist")
+        result = session.get(Products, id_new_product)
 
-    return {**json_body, **{"id": id_new_product}}
+    return result
 
 
 @product_routes.route("/products/{key}", methods=["PATCH", "PUT"])
-@serializer(query_string_scheme=ValidateId(), json_scheme=ValidateJsonBodyProduct())
+@serializer(
+    query_string_scheme=ValidateId(), json_scheme=ValidateJsonBodyProductPatch()
+)
 @marschal_with(status_code=status.NO_CONTENT, content_type="application/json")
-def modify_product(key: int, json_input: dict = {}):
-
-
-    with Session() as session:
-        stmt = select(Products).where(Products.name == json_input.get("name"))
-        stmt = exists(stmt).select()
-        result = session.execute(stmt).scalar()
-
-    if result:
-        raise ForbiddenError(f"The products already exist")
+def modify_product(key: int, json_body: dict = {}):
 
     with Session() as session:
-        stmt = update(Products).where(Products.id == key).values(**json_input)
-        session.execute(stmt)
-        session.commit()
+        result = session.get(Products, key)
+
+    if not result:
+        raise ForbiddenError(f"The products doesnt exist")
+
+    with Session() as session:
+        try:
+            stmt = update(Products).where(Products.id == key).values(**json_body)
+            session.execute(stmt)
+            session.commit()
+        except IntegrityError:
+            raise ForbiddenError(f"The product name is already taken")
 
     return None
 
@@ -82,7 +85,7 @@ def modify_product(key: int, json_input: dict = {}):
 @product_routes.route("/products/{key}", methods=["DELETE"])
 @serializer(query_string_scheme=ValidateId())
 @marschal_with(status_code=status.NO_CONTENT, content_type="application/json")
-def delete_product(key: int, json: dict = {}):
+def delete_product(key: int, json_body: dict = {}):
     with Session() as session:
         stmt = delete(Products).where(Products.id == key)
         try:

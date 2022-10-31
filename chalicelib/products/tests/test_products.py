@@ -35,7 +35,7 @@ def run_before_and_after_tests(tmpdir):
         session.commit()
 
 
-class TestUnitMeasure(object):
+class TestProducts(object):
     def test_retrieve_products(self, gateway_factory):
         with Session() as session:
             stmt = insert(UnitMeasure).values(name="liters")
@@ -76,7 +76,7 @@ class TestUnitMeasure(object):
 
         with Session() as session:
             stmt = select(Products)
-            result = session.execute(stmt).scalars().all()
+            result = session.execute(stmt).scalars().unique().all()
             products = ProductsSchema().dump(result, many=True)
 
         body, status_code = json.loads(response.get("body")), response.get("statusCode")
@@ -86,22 +86,22 @@ class TestUnitMeasure(object):
 
     def test_retrieve_product_by_id(self, gateway_factory):
         with Session() as session:
-            stmt = insert(UnitMeasure).values(name="liters")
+            stmt = insert(UnitMeasure).values(name="ss")
             (id_new_unit_measure,) = session.execute(stmt).inserted_primary_key
 
             stmt = insert(Products).values(
-                name="Coca Cola", price=239, unit_measure_id=id_new_unit_measure
+                name="Coca Colaz", price=239, unit_measure_id=id_new_unit_measure
             )
             (id_new_product,) = session.execute(stmt).inserted_primary_key
             session.commit()
 
         gateway = gateway_factory()
-        _ = dict(name="Coca Cola", price=239, unit_measure_id=id_new_unit_measure)
+
         response = gateway.handle_request(
             method="GET",
-            path="/products",
+            path=f"/products/{id_new_product}",
             headers={"Content-Type": "application/json"},
-            body=json.dumps(_),
+            body=json.dumps({}),
         )
 
         with Session() as session:
@@ -111,9 +111,9 @@ class TestUnitMeasure(object):
         body, status_code = json.loads(response.get("body")), response.get("statusCode")
 
         assert status_code == status.OK
-        assert body[0] == products
+        assert body == products
 
-    def test_create_unit_measure(self, gateway_factory):
+    def test_create_product(self, gateway_factory):
         gateway = gateway_factory()
 
         with Session() as session:
@@ -140,7 +140,8 @@ class TestUnitMeasure(object):
         with Session() as session:
             temp = session.get(Products, body.get("id"))
             result = ProductsSchema().dump(temp)
-        result["price"] = float(result["price"])
+
+        result["price"] = round(result["price"], 2)
         assert response.get("statusCode") == status.CREATED
         assert body == result
 
@@ -148,23 +149,30 @@ class TestUnitMeasure(object):
         with Session() as session:
             stmt = insert(UnitMeasure).values(name="liters")
             (id_new_unit_measure,) = session.execute(stmt).inserted_primary_key
+            stmt_product = insert(Products).values(
+                name="coca cola",
+                stock=10,
+                unit_measure_id=id_new_unit_measure,
+                price=420.23,
+            )
+            (id_new_product,) = session.execute(stmt_product).inserted_primary_key
             session.commit()
 
         gateway = gateway_factory()
         response = gateway.handle_request(
             method="PATCH",
-            path=f"/unit-measure/{id_new_unit_measure}",
+            path=f"/products/{id_new_product}",
             headers={"Content-Type": "application/json"},
-            body=json.dumps({"name": "kilos"}),
+            body=json.dumps({"name": "pepsi"}),
         )
 
         body = json.loads(response.get("body"))
         with Session() as session:
-            result: UnitMeasure = session.get(UnitMeasure, id_new_unit_measure)
+            result: Products = session.get(Products, id_new_product)
 
         assert response.get("statusCode") == status.NO_CONTENT
         assert body is None
-        assert result.name == "kilos"
+        assert result.name == "pepsi"
 
     def test_duplicate_product(self, gateway_factory):
         """Test trying to create a unit-measure that already exist"""

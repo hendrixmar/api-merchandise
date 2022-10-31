@@ -45,9 +45,9 @@ def serializer(query_string_scheme: Schema = None, json_scheme: Schema = None):
 
 
 def marschal_with(
-        scheme: SQLAlchemySchema = None,
-        status_code: int = 200,
-        content_type: str = "application/json",
+    scheme: SQLAlchemySchema = None,
+    status_code: int = 200,
+    content_type: str = "application/json",
 ):
     def decorator(function):
         def wrapper(*args, **kwargs):

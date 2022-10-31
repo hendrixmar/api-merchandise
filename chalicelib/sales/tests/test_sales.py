@@ -1,7 +1,8 @@
 import json
+import random
 
 import pytest
-
+from typing import List
 import app
 from chalice.test import Client
 from http import HTTPStatus as status
@@ -9,8 +10,9 @@ from unittest.mock import patch
 from decimal import Decimal
 
 from chalicelib.products.args import ProductsSchema
+from chalicelib.sales.schemes import SalesSchema, ProductSale
 from chalicelib.unit_measure.args import UnitMeasureSchema
-from chalicelib.models import Products, UnitMeasure
+from chalicelib.models import Products, UnitMeasure, Sales, SalesItem
 from chalicelib.unit_measure.tests.config_test import gateway_factory
 from sqlalchemy import delete, select, insert
 import logging
@@ -22,115 +24,150 @@ mylogger = logging.getLogger(__name__)
 
 @pytest.fixture(autouse=True)
 def run_before_and_after_tests(tmpdir):
-    with Session() as session:
-        session.query(Products).delete()
-        session.query(UnitMeasure).delete()
-        session.commit()
-
     yield
-
-    with Session() as session:
-        session.query(Products).delete()
-        session.query(UnitMeasure).delete()
-        session.commit()
+    print("HOLA")
 
 
 class TestSales(object):
-    def test_retrieve_sales(self, gateway_factory):
+    @classmethod
+    def setup_class(cls):
+        return True
         with Session() as session:
             stmt = insert(UnitMeasure).values(name="liters")
             (id_new_unit_measure,) = session.execute(stmt).inserted_primary_key
-
+            stmt = insert(UnitMeasure).values(name="kg")
+            (id_new_kg,) = session.execute(stmt).inserted_primary_key
             session.add_all(
                 [
                     Products(
                         name="Coca Cola",
-                        price=239,
+                        price=4.20,
                         unit_measure_id=id_new_unit_measure,
-                        stock=20,
+                        stock=100,
                     ),
                     Products(
                         name="Pepsi",
-                        price=239,
+                        price=2.1,
                         unit_measure_id=id_new_unit_measure,
-                        stock=10,
+                        stock=100,
                     ),
                     Products(
                         name="Fanta",
-                        price=239,
+                        price=23.23,
                         unit_measure_id=id_new_unit_measure,
-                        stock=20,
+                        stock=100,
+                    ),
+                    Products(
+                        name="rice",
+                        price=4.20,
+                        unit_measure_id=id_new_kg,
+                        stock=100,
+                    ),
+                    Products(
+                        name="potatoes",
+                        price=2.1,
+                        unit_measure_id=id_new_kg,
+                        stock=100,
+                    ),
+                    Products(
+                        name="tomato",
+                        price=23.23,
+                        unit_measure_id=id_new_kg,
+                        stock=100,
                     ),
                 ]
             )
 
+            # session.commit()
+
+    @classmethod
+    def teardown_class(cls):
+        print("TEAR DOWN")
+        with Session() as session:
+            """
+            session.query(Sales).delete()
+            session.query(Products).delete()
+            session.query(UnitMeasure).delete()
             session.commit()
+            """
+
+    def test_retrieve_sales(self, gateway_factory):
+        """Test that the sales information is retrieve in the correct format"""
 
         gateway = gateway_factory()
         response = gateway.handle_request(
             method="GET",
-            path="/products",
+            path="/sales",
             headers={"Content-Type": "application/json"},
-            body="",
+            body=json.dumps({}),
         )
 
         with Session() as session:
-            stmt = select(Products)
-            result = session.execute(stmt).scalars().all()
-            products = ProductsSchema().dump(result, many=True)
+            stmt = select(Sales)
+            temp = session.execute(stmt).scalars().unique().all()
+            sales_result = SalesSchema(many=True).dump(temp)
 
         body, status_code = json.loads(response.get("body")), response.get("statusCode")
 
         assert status_code == status.OK
-        assert body == products
+        assert sales_result == body
 
-    def test_retrieve_product_by_id(self, gateway_factory):
+    def test_retrieve_sale_by_id(self, gateway_factory):
         with Session() as session:
-            stmt = insert(UnitMeasure).values(name="liters")
-            (id_new_unit_measure,) = session.execute(stmt).inserted_primary_key
+            stmt = select(Sales)
+            temp = session.execute(stmt).scalars().unique().first()
+            sales = SalesSchema().dump(temp)
+            sales_id = temp.id
 
-            stmt = insert(Products).values(
-                name="Coca Cola", price=239, unit_measure_id=id_new_unit_measure
+        gateway = gateway_factory()
+        response = gateway.handle_request(
+            method="GET",
+            path=f"/sales/{sales_id}",
+            headers={"Content-Type": "application/json"},
+            body=json.dumps({}),
+        )
+
+        body, status_code = json.loads(response.get("body")), response.get("statusCode")
+        body["sales_items"].sort(key=lambda x: x["quantity_sold"])
+        sales["sales_items"].sort(key=lambda x: x["quantity_sold"])
+        assert status_code == status.OK
+        assert body == sales
+
+    def test_create_sale(self, gateway_factory):
+        """Test the creation of a sale by replicate the calculation of the quantity sold
+        and checking if the stock is update in the table products"""
+        gateway = gateway_factory()
+
+        with Session() as session:
+            stmt_product_fetch = select(Products)
+            products: [Products] = (
+                session.execute(stmt_product_fetch).scalars().unique().all()
             )
-            (id_new_product,) = session.execute(stmt).inserted_primary_key
-            session.commit()
 
-        gateway = gateway_factory()
-        _ = dict(name="Coca Cola", price=239, unit_measure_id=id_new_unit_measure)
-        response = gateway.handle_request(
-            method="GET",
-            path="/products",
-            headers={"Content-Type": "application/json"},
-            body=json.dumps(_),
-        )
-
-        with Session() as session:
-            result: Products = session.get(Products, id_new_product)
-            products = ProductsSchema().dump(result)
-
-        body, status_code = json.loads(response.get("body")), response.get("statusCode")
-
-        assert status_code == status.OK
-        assert body[0] == products
-
-    def test_create_unit_measure(self, gateway_factory):
-        gateway = gateway_factory()
-
-        with Session() as session:
-            stmt = insert(UnitMeasure).values(name="liters")
-            (id_new_unit_measure,) = session.execute(stmt).inserted_primary_key
-            session.commit()
+            products_sale = [
+                {
+                    "product_id": product.id,
+                    "quantity_sold": 10,
+                    "stock_available": product.stock,
+                    "price": float(product.price),
+                }
+                for product in products
+            ]
+            request_body = [
+                {
+                    "product_id": product.get("product_id"),
+                    "quantity_sold": product.get("quantity_sold"),
+                }
+                for product in products_sale
+            ]
 
         response = gateway.handle_request(
             method="POST",
-            path="/products",
+            path="/sales",
             headers={"Content-Type": "application/json"},
             body=json.dumps(
                 {
-                    "name": "Wasser",
-                    "unit_measure_id": id_new_unit_measure,
-                    "stock": 10,
-                    "price": 420.303,
+                    "products": request_body,
                 }
             ),
         )
@@ -138,65 +175,83 @@ class TestSales(object):
         body = json.loads(response.get("body"))
 
         with Session() as session:
-            temp = session.get(Products, body.get("id"))
-            result = ProductsSchema().dump(temp)
-        result["price"] = float(result["price"])
+            temp = session.get(Sales, body.get("id"))
+            result = SalesSchema().dump(temp)
+
         assert response.get("statusCode") == status.CREATED
         assert body == result
+        total_amount = 0
+        # recreating the calculation of the total cost and the total cost of each item
+        for sale_item in body.get("sales_items"):
+            total_cost = sale_item.get("quantity_sold") * sale_item.get("products").get(
+                "price"
+            )
+            assert round(total_cost, 2) == sale_item.get("sale_amount")
+            total_amount += total_cost
+            """
+            id_product = sale_item['products']['id']
+            product = [product for product in products_sale if product.get('id') == id_product].pop()
+            assert product.get("stock_available") ==
+            """
+        assert round(total_amount, 2) == body.get("sale_amount")
 
     def test_partial_update(self, gateway_factory):
         with Session() as session:
-            stmt = insert(UnitMeasure).values(name="liters")
-            (id_new_unit_measure,) = session.execute(stmt).inserted_primary_key
+            stmt = insert(Sales)
+            (sale_id,) = session.execute(stmt).inserted_primary_key
+
+            stmt_product_fetch = select(Products)
+
+            temp: List[Products] = (
+                session.execute(stmt_product_fetch).scalars().unique().all()
+            )
+            products = [
+                {
+                    "quantity_sold": 10,
+                    "product_id": product.id,
+                }
+                for product in temp
+            ]
+            session.bulk_save_objects(
+                [SalesItem(sales_id=sale_id, **product) for product in products]
+            )
             session.commit()
 
         gateway = gateway_factory()
+
         response = gateway.handle_request(
             method="PATCH",
-            path=f"/unit-measure/{id_new_unit_measure}",
+            path=f"/sales/{sale_id}",
             headers={"Content-Type": "application/json"},
-            body=json.dumps({"name": "kilos"}),
+            body=json.dumps(
+                {
+                    "products": [
+                        {"product_id": product.get("product_id"), "quantity_sold": 20}
+                        for product in products
+                    ]
+                }
+            ),
         )
 
         body = json.loads(response.get("body"))
         with Session() as session:
-            result: UnitMeasure = session.get(UnitMeasure, id_new_unit_measure)
+            result: Sales = session.get(Sales, sale_id)
 
         assert response.get("statusCode") == status.NO_CONTENT
         assert body is None
-        assert result.name == "kilos"
-
-    def test_duplicate_product(self, gateway_factory):
-        """Test trying to create a unit-measure that already exist"""
-        with Session() as session:
-            stmt = insert(UnitMeasure).values(name="liters")
-            session.execute(stmt)
-            session.commit()
-
-        gateway = gateway_factory()
-        response = gateway.handle_request(
-            method="POST",
-            path=f"/unit-measure",
-            headers={"Content-Type": "application/json"},
-            body=json.dumps({"name": "liters"}),
-        )
-
-        body = json.loads(response.get("body"))
-
-        assert response.get("statusCode") == status.FORBIDDEN
-        assert body.get("Code") == "ForbiddenError"
-        assert body.get("Message") == "The unit-measure (liters) already exist"
 
     def test_delete_product(self, gateway_factory):
         with Session() as session:
-            stmt = insert(UnitMeasure).values(name="liters")
-            (id_new_product,) = session.execute(stmt).inserted_primary_key
-            session.commit()
+            stmt_product_fetch = select(Sales)
+            sales: [Sales] = (
+                session.execute(stmt_product_fetch).scalars().unique().first()
+            )
+            sale_id = sales.id
 
         gateway = gateway_factory()
         response = gateway.handle_request(
             method="DELETE",
-            path=f"/products/{id_new_product}",
+            path=f"/sales/{sale_id}",
             headers={"Content-Type": "application/json"},
             body=json.dumps({}),
         )
@@ -205,33 +260,6 @@ class TestSales(object):
         assert response.get("statusCode") == status.NO_CONTENT
         assert body is None
 
-    def test_validate_new_product_input(self, gateway_factory):
         with Session() as session:
-            stmt = insert(UnitMeasure).values(name="liters")
-            (id_new_unit_measure,) = session.execute(stmt).inserted_primary_key
-            session.commit()
-
-        gateway = gateway_factory()
-        _ = {
-            "name": "cabronxxsh",
-            "price": -402.2323,
-            "stock": -100,
-            "unit_measure_id": id_new_unit_measure,
-        }
-        response = gateway.handle_request(
-            method="POST",
-            path="/products",
-            headers={"Content-Type": "application/json"},
-            body=json.dumps(_),
-        )
-
-        with Session() as session:
-            stmt = select(Products)
-            result = session.execute(stmt).scalars().all()
-            products = ProductsSchema().dump(result, many=True)
-
-        body, status_code = json.loads(response.get("body")), response.get("statusCode")
-
-        assert status_code == status.BAD_REQUEST
-        assert "'price': ['Must be greater than or equal to 0" in body.get("Message")
-        assert "'stock': ['Must be greater than or equal to 0" in body.get("Message")
+            found = session.get(Sales, sale_id)
+            assert not found

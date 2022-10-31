@@ -2,92 +2,98 @@ import sqlalchemy
 from chalice import Blueprint, Response
 from sqlalchemy import delete, select, update, insert, exists
 from http import HTTPStatus as status
+from sqlalchemy.sql import and_
+from sqlalchemy.orm import joinedload
+
 from chalicelib.db import Session
-from .args import ValidateJsonBodyProduct
-from chalicelib.models import Products
+from .schemes import ValidateJsonBodySales, ValidateJsonBodySalesPatch
+from chalicelib.models import Products, Sales, SalesItem
 from chalicelib.tools import ValidateId, serializer, marschal_with
 from chalice import BadRequestError, ForbiddenError
 from sqlalchemy.exc import IntegrityError
 
-from ..products.args import ProductsSchema
-from ..unit_measure.args import ValidateJsonSorting
-
-product_routes = Blueprint(__name__)
+from chalicelib.sales.schemes import SalesSchema
 
 
-@product_routes.route("/sales", methods=["GET"])
+sales_routes = Blueprint(__name__)
+
+
+@sales_routes.route("/sales", methods=["GET"])
 @marschal_with(
-    scheme=ProductsSchema(many=True),
+    scheme=SalesSchema(many=True),
     status_code=status.OK,
     content_type="application/json",
 )
 def retrieve_sales():
     with Session() as session:
-        stmt = select(Products)
-        products = session.execute(stmt).scalars().all()
-    return products
+        stmt = select(Sales)
+        sales = session.execute(stmt).scalars().unique().all()
+    return sales
 
 
-@product_routes.route("/sales/{key}", methods=["GET"])
+@sales_routes.route("/sales/{key}", methods=["GET"])
 @serializer(query_string_scheme=ValidateId())
 @marschal_with(
-    scheme=ProductsSchema(), status_code=status.OK, content_type="application/json"
+    scheme=SalesSchema(), status_code=status.OK, content_type="application/json"
 )
-def retrieve_sale(key: int):
+def retrieve_sale(key: int, json_body: dict = {}):
     with Session() as session:
-        result: Products = session.get(Products, key)
+        result: Sales = session.get(Sales, key)
 
     return result
 
 
-@product_routes.route("/sales", methods=["POST"])
-@serializer(json_scheme=ValidateJsonBodyProduct())
+@sales_routes.route("/sales", methods=["POST"])
+@serializer(json_scheme=ValidateJsonBodySales())
 @marschal_with(
-    scheme=ProductsSchema(), status_code=status.CREATED, content_type="application/json"
+    scheme=SalesSchema(), status_code=status.CREATED, content_type="application/json"
 )
 def add_sale(json_body: dict = {}):
 
     with Session() as session:
-        stmt = insert(Products).values(**json_body)
-        try:
-            (id_new_unit_measure,) = session.execute(stmt).inserted_primary_key
-            session.commit()
-        except IntegrityError:
-            raise ForbiddenError(f"The product ({json_body.get('name')}) already exist")
+        stmt = insert(Sales)
+        (sale_id,) = session.execute(stmt).inserted_primary_key
 
-    return {**json_body, **{"id": id_new_unit_measure}}
+        session.bulk_save_objects(
+            [
+                SalesItem(sales_id=sale_id, **product)
+                for product in json_body.get("products")
+            ]
+        )
+        session.commit()
+        result = session.get(Sales, sale_id)
+
+    return result
 
 
-@product_routes.route("/sales/{key}", methods=["PATCH", "PUT"])
-@serializer(query_string_scheme=ValidateId())
+@sales_routes.route("/sales/{key}", methods=["PATCH", "PUT"])
+@serializer(query_string_scheme=ValidateId(), json_scheme=ValidateJsonBodySalesPatch())
 @marschal_with(status_code=status.NO_CONTENT, content_type="application/json")
-def modify_sale(key: int, body: dict = {}):
-    json_input = product_routes.current_request.json_body
+def modify_sale(key: int, json_body: dict = {}):
 
     with Session() as session:
-        stmt = select(Products).where(Products.name == json_input.get("name"))
-        stmt = exists(stmt).select()
-        result = session.execute(stmt).scalar()
-
-    if result:
-        raise ForbiddenError(f"The products already exist")
-
-    with Session() as session:
-        stmt = update(Products).where(Products.id == key).values(**json_input)
-        session.execute(stmt)
+        for sale_item in json_body.get("products"):
+            stmt = (
+                update(SalesItem)
+                .where(
+                    (SalesItem.sales_id == key)
+                    & (SalesItem.product_id == sale_item.get("product_id"))
+                )
+                .values(quantity_sold=sale_item.get("quantity_sold"))
+            )
+            session.execute(stmt)
         session.commit()
 
     return None
 
 
-@product_routes.route("/sales/{key}", methods=["DELETE"])
+@sales_routes.route("/sales/{key}", methods=["DELETE"])
 @serializer(query_string_scheme=ValidateId())
 @marschal_with(status_code=status.NO_CONTENT, content_type="application/json")
-def delete_sale(key: int, json: dict = {}):
+def delete_sale(key: int, json_body: dict = {}):
     with Session() as session:
-        stmt = delete(Products).where(Products.id == key)
+        stmt = delete(Sales).where(Sales.id == key)
         try:
-
             session.execute(stmt)
             session.commit()
         except IntegrityError:

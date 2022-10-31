@@ -21,7 +21,7 @@ unit_measure_routes = Blueprint(__name__)
 def add_unit_measure(json_body: dict = {}):
     with Session() as session:
         stmt = select(UnitMeasure)
-        unit_measures = session.execute(stmt).scalars().all()
+        unit_measures = session.execute(stmt).scalars().unique().all()
 
     return unit_measures
 

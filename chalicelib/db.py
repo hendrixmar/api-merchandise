@@ -1,58 +1,24 @@
 import os
 from chalicelib.settings import Settings
 from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 
 if not os.getenv("GITHUB_ACTION"):
     from dotenv import load_dotenv, find_dotenv
 
     load_dotenv(find_dotenv())
 
+print("Start__ database")
 engine = create_engine(Settings.DATABASE_URL)
 
 Base = declarative_base()
-
+print("Start__ connection started successfully")
 
 def create_all_models():
     Base.metadata.create_all(engine)
 
 
-def create_triggers():
-
-    with open("./chalicelib/triggers.sql") as file:
-        stmt_triggers = text(file.read())
-
-    with Session() as session:
-        stmt = """SELECT  event_object_table AS table_name, trigger_name
-                        FROM information_schema.triggers"""
-
-        exist = session.execute(stmt).scalar()
-        if not exist:
-            session.execute(stmt_triggers)
-            session.commit()
-
-
-Session = sessionmaker(bind=engine)
-
-TRIGGERS_DEFINITIONS = """
-    CREATE TRIGGER create_new_sale
-      BEFORE INSERT
-      ON "tblSalesItem"
-      FOR EACH ROW
-      EXECUTE PROCEDURE stock_availability();
-    
-    
-    CREATE TRIGGER update_sales_amount
-      before UPDATE
-      ON "tblSalesItem"
-      FOR EACH ROW
-      EXECUTE PROCEDURE update_sales_items();
-
-"""
-
-
-ROUTINES_DEFINITIONS = """
-    
+TRIGGER_QUERY = """
 CREATE OR REPLACE FUNCTION stock_availability()
   RETURNS TRIGGER
   LANGUAGE PLPGSQL
@@ -86,9 +52,7 @@ BEGIN
 	RETURN NEW;
 END;
 $$;
-
-
-
+-----------------------------------------------------------
 CREATE OR REPLACE FUNCTION update_sales_items()
   RETURNS TRIGGER
   LANGUAGE PLPGSQL
@@ -121,6 +85,100 @@ BEGIN
 	RETURN NEW;
 END;
 $$;
+
+CREATE OR REPLACE FUNCTION delete_sales_items()
+  RETURNS TRIGGER
+  LANGUAGE PLPGSQL
+  AS
+$$
+BEGIN
+
+
+    -- Update the stock
+
+
+    UPDATE "tblProducts"
+        SET stock = stock + OLD.quantity_sold
+            WHERE ID = OLD.product_id;
+
+
+    IF pg_trigger_depth() = 1 THEN
+       UPDATE "tblSales"
+        set sale_amount = sale_amount - OLD.sale_amount
+            WHERE ID = OLD.sales_id;
+    END IF;
+
+    -- Update total amount of the whole sale
+
+	RETURN old;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION delete_sales()
+  RETURNS TRIGGER
+  LANGUAGE PLPGSQL
+  AS
+$$
+DECLARE
+    id_sale_item integer;
+BEGIN
+
+    FOR id_sale_item IN
+        SELECT "tblSalesItem".id FROM "tblSalesItem" where sales_id = OLD.id
+    LOOP
+        DELETE FROM "tblSalesItem"
+         WHERE "tblSalesItem".id = id_sale_item;
+        RAISE log '%', id_sale_item;
+    END LOOP;
+
+	RETURN old;
+END;
+$$;
+
+
+
+CREATE TRIGGER create_new_sale
+  BEFORE INSERT
+  ON "tblSalesItem"
+  FOR EACH ROW
+  EXECUTE PROCEDURE stock_availability();
+
+
+CREATE TRIGGER update_sales_amount
+  BEFORE UPDATE
+  ON "tblSalesItem"
+  FOR EACH ROW
+  EXECUTE PROCEDURE update_sales_items();
+
+CREATE TRIGGER update_stocks_after_delete
+  before delete
+  ON "tblSalesItem"
+  FOR EACH ROW
+  EXECUTE PROCEDURE delete_sales_items();
+
+
+CREATE TRIGGER delete_sale
+  before DELETE
+  ON "tblSales"
+  FOR EACH ROW
+  EXECUTE PROCEDURE delete_sales();
+
 """
+
+
+def create_triggers():
+
+    with Session() as session:
+        stmt = """SELECT  event_object_table AS table_name, trigger_name
+                        FROM information_schema.triggers"""
+
+        exist = session.execute(stmt).scalar()
+        if not exist:
+            session.execute(TRIGGER_QUERY)
+            session.commit()
+
+
+Session = sessionmaker(bind=engine)
+
 
 create_all_models()

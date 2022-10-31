@@ -31,9 +31,7 @@ BEGIN
 	RETURN NEW;
 END;
 $$;
-
-
-
+-----------------------------------------------------------
 CREATE OR REPLACE FUNCTION update_sales_items()
   RETURNS TRIGGER
   LANGUAGE PLPGSQL
@@ -67,6 +65,55 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION delete_sales_items()
+  RETURNS TRIGGER
+  LANGUAGE PLPGSQL
+  AS
+$$
+BEGIN
+
+
+    -- Update the stock
+
+
+    UPDATE "tblProducts"
+        SET stock = stock + OLD.quantity_sold
+            WHERE ID = OLD.product_id;
+
+
+    IF pg_trigger_depth() = 1 THEN
+       UPDATE "tblSales"
+        set sale_amount = sale_amount - OLD.sale_amount
+            WHERE ID = OLD.sales_id;
+    END IF;
+
+    -- Update total amount of the whole sale
+
+	RETURN old;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION delete_sales()
+  RETURNS TRIGGER
+  LANGUAGE PLPGSQL
+  AS
+$$
+DECLARE
+    id_sale_item integer;
+BEGIN
+
+    FOR id_sale_item IN
+        SELECT "tblSalesItem".id FROM "tblSalesItem" where sales_id = OLD.id
+    LOOP
+        DELETE FROM "tblSalesItem"
+         WHERE "tblSalesItem".id = id_sale_item;
+        RAISE log '%', id_sale_item;
+    END LOOP;
+
+	RETURN old;
+END;
+$$;
+
 
 
 CREATE TRIGGER create_new_sale
@@ -77,8 +124,20 @@ CREATE TRIGGER create_new_sale
 
 
 CREATE TRIGGER update_sales_amount
-  before UPDATE
+  BEFORE UPDATE
   ON "tblSalesItem"
   FOR EACH ROW
   EXECUTE PROCEDURE update_sales_items();
 
+CREATE TRIGGER update_stocks_after_delete
+  before delete
+  ON "tblSalesItem"
+  FOR EACH ROW
+  EXECUTE PROCEDURE delete_sales_items();
+
+
+CREATE TRIGGER delete_sale
+  before DELETE
+  ON "tblSales"
+  FOR EACH ROW
+  EXECUTE PROCEDURE delete_sales();

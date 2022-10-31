@@ -50,7 +50,7 @@ class TestUnitMeasure(object):
 
         with Session() as session:
             stmt = select(UnitMeasure)
-            result = session.execute(stmt).scalars().all()
+            result = session.execute(stmt).scalars().unique().all()
             unit_measure = UnitMeasureSchema().dump(result, many=True)
 
         body, status_code = json.loads(response.get("body")), response.get("statusCode")
@@ -87,7 +87,7 @@ class TestUnitMeasure(object):
             stmt = insert(UnitMeasure).values(name="liters")
             (id_new_unit_measure,) = session.execute(stmt).inserted_primary_key
             session.commit()
-        print()
+
         gateway = gateway_factory()
         response = gateway.handle_request(
             method="PATCH",
@@ -97,7 +97,7 @@ class TestUnitMeasure(object):
         )
 
         body = json.loads(response.get("body"))
-        print(body)
+
         with Session() as session:
             result: UnitMeasure = session.get(UnitMeasure, id_new_unit_measure)
 
