@@ -8,3 +8,4 @@ python-dotenv
 flake8
 pytest
 black
+s3
