@@ -2,7 +2,7 @@ chalice
 requests
 sqlalchemy
 psycopg2-binary
-aws_lambda_powertools
+futures==3.1.1
 marshmallow
 python-dotenv
 flake8
