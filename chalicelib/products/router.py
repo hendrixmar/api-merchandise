@@ -6,13 +6,12 @@ from chalicelib.db import Session
 from .schemas import (
     ProductsSchema,
     ValidateJsonBodyProduct,
-    ValidateJsonBodyProductPatch,
+    ValidateJsonBodyProductPatch, ProductsSalesSchema,
 )
 from chalicelib.models import Products
 from chalicelib.tools import ValidateId, serializer, marschal_with
 from chalice import ForbiddenError
 from sqlalchemy.exc import IntegrityError
-
 
 product_routes = Blueprint(__name__)
 
@@ -25,7 +24,7 @@ product_routes = Blueprint(__name__)
 )
 def retrieve_products():
     with Session() as session:
-        stmt = select(Products)
+        stmt = select(Products).limit(100)
         products = session.execute(stmt).scalars().unique().all()
     return products
 
@@ -44,6 +43,33 @@ def retrieve_product(key: int, json_body: dict = {}):
     return result
 
 
+@product_routes.route("/products/estadistics", methods=["GET"])
+@marschal_with(
+    scheme=ProductsSalesSchema(many=True),
+    status_code=status.OK,
+    content_type="application/json",
+)
+def retrieve_products_estadistics():
+    with Session() as session:
+        stmt = select(Products).limit(100)
+        products = session.execute(stmt).scalars().unique().all()
+    return products
+
+
+@product_routes.route("/products/estadistics/{key}", methods=["GET"])
+@serializer(query_string_scheme=ValidateId())
+@marschal_with(
+    scheme=ProductsSalesSchema(),
+    status_code=status.OK,
+    content_type="application/json"
+)
+def retrieve_product_estadistics(key: int, json_body: dict = {}):
+    with Session() as session:
+        result: Products = session.get(Products, key)
+
+    return result
+
+
 @product_routes.route("/products", methods=["POST"])
 @serializer(json_scheme=ValidateJsonBodyProduct())
 @marschal_with(
@@ -52,11 +78,10 @@ def retrieve_product(key: int, json_body: dict = {}):
     content_type="application/json"
 )
 def add_product(json_body: dict = {}):
-
     with Session() as session:
         stmt = insert(Products).values(**json_body)
         try:
-            (id_new_product,) = session.execute(stmt)\
+            (id_new_product,) = session.execute(stmt) \
                 .inserted_primary_key
             session.commit()
         except IntegrityError:
@@ -66,13 +91,13 @@ def add_product(json_body: dict = {}):
     return result
 
 
+
 @product_routes.route("/products/{key}", methods=["PATCH", "PUT"])
 @serializer(
     query_string_scheme=ValidateId(), json_scheme=ValidateJsonBodyProductPatch()
 )
 @marschal_with(status_code=status.NO_CONTENT, content_type="application/json")
 def modify_product(key: int, json_body: dict = {}):
-
     with Session() as session:
         result = session.get(Products, key)
 
@@ -81,8 +106,8 @@ def modify_product(key: int, json_body: dict = {}):
 
     with Session() as session:
         try:
-            stmt = update(Products)\
-                .where(Products.id == key)\
+            stmt = update(Products) \
+                .where(Products.id == key) \
                 .values(**json_body)
             session.execute(stmt)
             session.commit()

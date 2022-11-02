@@ -17,7 +17,7 @@ create_triggers()
 
 
 @app.on_s3_event(
-    "cdk-hnb659fds-assets-268904430734-us-east-1", events=["s3:ObjectCreated:Put"]
+    "cdk-hnb659fds-assets-268904430734-us-east-1", events=["s3:ObjectCreated:*"]
 )
 def resize_image(event):
 

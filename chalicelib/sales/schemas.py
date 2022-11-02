@@ -46,3 +46,4 @@ class ValidateJsonBodySales(Schema):
 
 class ValidateJsonBodySalesPatch(Schema):
     products = fields.List(fields.Nested(ProductSale), required=True)
+
