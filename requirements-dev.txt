@@ -8,4 +8,5 @@ python-dotenv
 flake8
 pytest
 black
-s3
+marshmallow_sqlalchemy
+boto3
