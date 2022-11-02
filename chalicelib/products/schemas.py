@@ -5,7 +5,7 @@ from marshmallow_sqlalchemy.fields import Nested
 
 from chalicelib.db import Session
 from chalicelib.models import Products
-from chalicelib.unit_measure.args import UnitMeasureSchema
+from chalicelib.unit_measure.schemas import UnitMeasureSchema
 
 
 class ProductsSchema(SQLAlchemySchema):

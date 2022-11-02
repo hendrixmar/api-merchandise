@@ -6,4 +6,4 @@ aws_lambda_powertools==2.0.0
 marshmallow
 python-dotenv
 pytz
-
+marshmallow_sqlalchemy

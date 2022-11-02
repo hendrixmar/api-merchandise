@@ -2,14 +2,11 @@ import json
 
 import pytest
 
-import app
-from chalice.test import Client
-from http import HTTPStatus as status
-from unittest.mock import patch
-from decimal import Decimal
 
-from chalicelib.products.args import ProductsSchema
-from chalicelib.unit_measure.args import UnitMeasureSchema
+from http import HTTPStatus as status
+
+from chalicelib.products.schemas import ProductsSchema
+
 from chalicelib.models import Products, UnitMeasure
 from chalicelib.unit_measure.tests.config_test import gateway_factory
 from sqlalchemy import delete, select, insert
@@ -79,7 +76,8 @@ class TestProducts(object):
             result = session.execute(stmt).scalars().unique().all()
             products = ProductsSchema().dump(result, many=True)
 
-        body, status_code = json.loads(response.get("body")), response.get("statusCode")
+        body = json.loads(response.get("body"))
+        status_code = response.get("statusCode")
 
         assert status_code == status.OK
         assert body == products
@@ -87,12 +85,16 @@ class TestProducts(object):
     def test_retrieve_product_by_id(self, gateway_factory):
         with Session() as session:
             stmt = insert(UnitMeasure).values(name="ss")
-            (id_new_unit_measure,) = session.execute(stmt).inserted_primary_key
+            (id_new_unit_measure,) = session.execute(stmt)\
+                .inserted_primary_key
 
             stmt = insert(Products).values(
-                name="Coca Colaz", price=239, unit_measure_id=id_new_unit_measure
+                name="Coca Colaz",
+                price=239,
+                unit_measure_id=id_new_unit_measure
             )
-            (id_new_product,) = session.execute(stmt).inserted_primary_key
+            (id_new_product,) = session.execute(stmt)\
+                .inserted_primary_key
             session.commit()
 
         gateway = gateway_factory()
@@ -108,7 +110,8 @@ class TestProducts(object):
             result: Products = session.get(Products, id_new_product)
             products = ProductsSchema().dump(result)
 
-        body, status_code = json.loads(response.get("body")), response.get("statusCode")
+        body = json.loads(response.get("body"))
+        status_code = response.get("statusCode")
 
         assert status_code == status.OK
         assert body == products
@@ -148,14 +151,16 @@ class TestProducts(object):
     def test_partial_update(self, gateway_factory):
         with Session() as session:
             stmt = insert(UnitMeasure).values(name="liters")
-            (id_new_unit_measure,) = session.execute(stmt).inserted_primary_key
+            (id_new_unit_measure,) = session.execute(stmt)\
+                .inserted_primary_key
             stmt_product = insert(Products).values(
                 name="coca cola",
                 stock=10,
                 unit_measure_id=id_new_unit_measure,
                 price=420.23,
             )
-            (id_new_product,) = session.execute(stmt_product).inserted_primary_key
+            (id_new_product,) = session.execute(stmt_product)\
+                .inserted_primary_key
             session.commit()
 
         gateway = gateway_factory()
@@ -184,7 +189,7 @@ class TestProducts(object):
         gateway = gateway_factory()
         response = gateway.handle_request(
             method="POST",
-            path=f"/unit-measure",
+            path="/unit-measure",
             headers={"Content-Type": "application/json"},
             body=json.dumps({"name": "liters"}),
         )
@@ -233,13 +238,11 @@ class TestProducts(object):
             body=json.dumps(_),
         )
 
-        with Session() as session:
-            stmt = select(Products)
-            result = session.execute(stmt).scalars().all()
-            products = ProductsSchema().dump(result, many=True)
-
-        body, status_code = json.loads(response.get("body")), response.get("statusCode")
+        status_code = response.get("statusCode")
+        body = json.loads(response.get("body"))
 
         assert status_code == status.BAD_REQUEST
-        assert "'price': ['Must be greater than or equal to 0" in body.get("Message")
-        assert "'stock': ['Must be greater than or equal to 0" in body.get("Message")
+        assert "Must be greater than or equal to 0" in body.get("Message")
+        assert "Must be greater than or equal to 0" in body.get("Message")
+        assert "stock" in body.get("Message")
+        assert "price" in body.get("Message")

@@ -3,11 +3,13 @@ from chalice import Blueprint, Response
 from sqlalchemy import delete, select, update, insert, exists
 from http import HTTPStatus as Status
 from chalicelib.db import Session
-from .args import UnitMeasureSchema
+from .schemas import UnitMeasureSchema
 from chalicelib.models import UnitMeasure
 from chalicelib.tools import ValidateId, serializer, marschal_with
 from chalice import BadRequestError, ForbiddenError
 from sqlalchemy.exc import IntegrityError
+
+from .service import get_unit_measure
 
 unit_measure_routes = Blueprint(__name__)
 
@@ -19,11 +21,8 @@ unit_measure_routes = Blueprint(__name__)
     content_type="application/json",
 )
 def add_unit_measure(json_body: dict = {}):
-    with Session() as session:
-        stmt = select(UnitMeasure)
-        unit_measures = session.execute(stmt).scalars().unique().all()
 
-    return unit_measures
+    return get_unit_measure(None)
 
 
 @unit_measure_routes.route("/unit-measure/{key}", methods=["GET"])

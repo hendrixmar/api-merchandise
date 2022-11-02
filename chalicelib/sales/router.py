@@ -6,13 +6,13 @@ from sqlalchemy.sql import and_
 from sqlalchemy.orm import joinedload
 
 from chalicelib.db import Session
-from .schemes import ValidateJsonBodySales, ValidateJsonBodySalesPatch
+from .schemas import ValidateJsonBodySales, ValidateJsonBodySalesPatch
 from chalicelib.models import Products, Sales, SalesItem
 from chalicelib.tools import ValidateId, serializer, marschal_with
 from chalice import BadRequestError, ForbiddenError
 from sqlalchemy.exc import IntegrityError
 
-from chalicelib.sales.schemes import SalesSchema
+from chalicelib.sales.schemas import SalesSchema
 
 
 sales_routes = Blueprint(__name__)

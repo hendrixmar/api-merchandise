@@ -4,7 +4,7 @@ from marshmallow_sqlalchemy import SQLAlchemySchema, auto_field
 
 from chalicelib.db import Session
 from chalicelib.models import Sales, SalesItem
-from chalicelib.products.args import ProductsSchema
+from chalicelib.products.schemas import ProductsSchema
 from marshmallow_sqlalchemy.fields import Nested
 
 

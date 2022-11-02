@@ -2,8 +2,6 @@ from marshmallow import Schema, fields
 from marshmallow.exceptions import ValidationError
 from chalice import BadRequestError, Response
 from marshmallow_sqlalchemy import SQLAlchemySchema
-from sqlalchemy import exists
-from sqlalchemy.orm import DeclarativeMeta
 from chalicelib.db import Session
 
 
@@ -63,3 +61,14 @@ def marschal_with(
         return wrapper
 
     return decorator
+
+
+def database_context_decorator(func):
+    def wrapper(*args, **kwargs):
+
+        with Session() as session_:
+            result = func(*args, session=session_, **kwargs)
+
+        return result
+
+    return wrapper

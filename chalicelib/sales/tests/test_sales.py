@@ -9,9 +9,9 @@ from http import HTTPStatus as status
 from unittest.mock import patch
 from decimal import Decimal
 
-from chalicelib.products.args import ProductsSchema
-from chalicelib.sales.schemes import SalesSchema, ProductSale
-from chalicelib.unit_measure.args import UnitMeasureSchema
+from chalicelib.products.schemas import ProductsSchema
+from chalicelib.sales.schemas import SalesSchema, ProductSale
+from chalicelib.unit_measure.schemas import UnitMeasureSchema
 from chalicelib.models import Products, UnitMeasure, Sales, SalesItem
 from chalicelib.unit_measure.tests.config_test import gateway_factory
 from sqlalchemy import delete, select, insert
@@ -31,7 +31,8 @@ def run_before_and_after_tests(tmpdir):
 class TestSales(object):
     @classmethod
     def setup_class(cls):
-        return True
+
+
         with Session() as session:
             stmt = insert(UnitMeasure).values(name="liters")
             (id_new_unit_measure,) = session.execute(stmt).inserted_primary_key
@@ -84,16 +85,13 @@ class TestSales(object):
     def teardown_class(cls):
         print("TEAR DOWN")
         with Session() as session:
-            """
             session.query(Sales).delete()
             session.query(Products).delete()
             session.query(UnitMeasure).delete()
             session.commit()
-            """
 
     def test_retrieve_sales(self, gateway_factory):
-        """Test that the sales information is retrieve in the correct format"""
-
+        """Test that all sales information is retrieve in the correct format"""
         gateway = gateway_factory()
         response = gateway.handle_request(
             method="GET",
@@ -113,11 +111,11 @@ class TestSales(object):
         assert sales_result == body
 
     def test_retrieve_sale_by_id(self, gateway_factory):
+        """Test a certain sales information is retrieve in the correct format"""
         with Session() as session:
-            stmt = select(Sales)
-            temp = session.execute(stmt).scalars().unique().first()
-            sales = SalesSchema().dump(temp)
-            sales_id = temp.id
+            stmt = insert(Sales)
+            (sales_id,) = session.execute(stmt).inserted_primary_key
+            session.commit()
 
         gateway = gateway_factory()
         response = gateway.handle_request(
@@ -126,10 +124,11 @@ class TestSales(object):
             headers={"Content-Type": "application/json"},
             body=json.dumps({}),
         )
-
+        with Session() as session:
+            temp = session.get(Sales, sales_id)
+            sales = SalesSchema().dump(temp)
         body, status_code = json.loads(response.get("body")), response.get("statusCode")
-        body["sales_items"].sort(key=lambda x: x["quantity_sold"])
-        sales["sales_items"].sort(key=lambda x: x["quantity_sold"])
+
         assert status_code == status.OK
         assert body == sales
 
